@@ -32,7 +32,7 @@ Please see the following for the detail.
    - Copyright (c) 2023, MapLibre contributors
    - License Details: https://github.com/maplibre/maplibre-gl-js/blob/main/LICENSE.txt
 
-1.2 maplibre-gl-opacity https://github.com/mug-jp/maplibre-gl-opacity
+1.2 maplibre-gl-opacity https://github.com/maplibre/maplibre-gl-js
    - Copyright (c) 2021-2023 Yasunori Kirimoto
    - License: MIT License
    - License Details: https://github.com/mug-jp/maplibre-gl-opacity/blob/main/LICENSE
