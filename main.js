@@ -178,6 +178,7 @@ const map = new MapLibreGL.Map({
   zoom: 4,
   center: [140.084556, 36.104611],
   hash: true,
+  maxPitch: 85, //maxPitch must be less than or equal to 85
   style: {
     version: 8,
     glyphs: "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
@@ -261,28 +262,28 @@ const map = new MapLibreGL.Map({
       gsidem10B2: {
         type: 'raster-dem',
         tiles: ['gsidem://https://cyberjapandata.gsi.go.jp/xyz/dem_png/{z}/{x}/{y}.png'],
-        attribution: '<a href="https://maps.gsi.go.jp/development/ichiran.html#dem" target="_blank">地理院タイル</a>',
+        attribution: '<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank">地理院タイル</a>',
         maxzoom: 14,
         tileSize: 256,
       },
       gsidem5A2: {
         type: 'raster-dem',
         tiles: ['gsidem://https://cyberjapandata.gsi.go.jp/xyz/dem5a_png/{z}/{x}/{y}.png'],
-        attribution: '<a href="https://maps.gsi.go.jp/development/ichiran.html#dem" target="_blank">地理院タイル</a>',
+        attribution: '<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank">地理院タイル</a>',
         maxzoom: 15,
         tileSize: 256,
       },
       gsidem5B2: {
         type: 'raster-dem',
         tiles: ['gsidem://https://cyberjapandata.gsi.go.jp/xyz/dem5b_png/{z}/{x}/{y}.png'],
-        attribution: '<a href="https://maps.gsi.go.jp/development/ichiran.html#dem" target="_blank">地理院タイル</a>',
+        attribution: '<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank">地理院タイル</a>',
         maxzoom: 15,
         tileSize: 256,
       },
       gsidem5C2: {
         type: 'raster-dem',
         tiles: ['gsidem://https://cyberjapandata.gsi.go.jp/xyz/dem5c_png/{z}/{x}/{y}.png'],
-        attribution: '<a href="https://maps.gsi.go.jp/development/ichiran.html#dem" target="_blank">地理院タイル</a>',
+        attribution: '<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank">地理院タイル</a>',
         maxzoom: 15,
         tileSize: 256,
       },
