@@ -177,8 +177,9 @@ const map = new MapLibreGL.Map({
   container: "map",
   zoom: 4,
   center: [140.084556, 36.104611],
-  hash: true,
+  pitch: 45,
   maxPitch: 85, //maxPitch must be less than or equal to 85
+  hash: true,
   style: {
     version: 8,
     glyphs: "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
@@ -205,7 +206,7 @@ const map = new MapLibreGL.Map({
         maxzoom: 18,
       },
 
-      //terrain
+      //terrain用
       gsidem10B: {
         type: 'raster-dem',
         tiles: ['gsidem://https://cyberjapandata.gsi.go.jp/xyz/dem_png/{z}/{x}/{y}.png'],
@@ -552,8 +553,8 @@ map.on("load", () => {
   });
   map.addControl(opacity, "top-left");
   
-  // 標高タイルセット 不要？？
-  //map.setTerrain({ 'source': 'gsidem1', 'exaggeration': 1 });
+  // 標高タイルセット
+  map.setTerrain({ 'source': 'gsidem10B', 'exaggeration': 1 });
 
 });
 
