@@ -3,7 +3,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import OpacityControl from "maplibre-gl-opacity";
 import "maplibre-gl-opacity/dist/maplibre-gl-opacity.css";
 import "./src/maplibre-gl-gsi-terrain-fast-png";
-//import { makeNumPngProtocol } from "./src/numPngProtocol.js";
+import { makeNumPngProtocol } from './src/numPngProtocol.js'
 
 document.addEventListener("DOMContentLoaded", function () {
   var DemSourceSelector = document.getElementById("Dem_Source_Selector");
@@ -60,7 +60,6 @@ document.addEventListener("DOMContentLoaded", function () {
       "gsidem5A": "contours5A",
       "gsidem5B": "contours5B",
       "gsidem5C": "contours5C",
-      "NotoE": "contoursNotoE",
       //"gsjdemmixed": "contoursMixed",
       //"tochigidem": "contourSourceTochigi",
       //"kochidem": "contourSourceKochi",
@@ -114,9 +113,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
 //等高線描画用
 var contourSource10B = new mlcontour.DemSource({
-  url: "https://cyberjapandata.gsi.go.jp/xyz/dem_png/{z}/{x}/{y}.png",
+  url: "https://tiles.gsj.jp/tiles/elev/mixed/{z}/{y}/{x}.png",
   encoding: "gsi", //mapbox or terrarium or gsi
-  maxzoom: 14, // dem_png → 14，5a,b,c → 15
+  maxzoom: 17, // dem_png → 14，5a,b,c → 15
 });
 var contourSource5A = new mlcontour.DemSource({
   url: "https://cyberjapandata.gsi.go.jp/xyz/dem5a_png/{z}/{x}/{y}.png",
@@ -132,11 +131,6 @@ var contourSource5C = new mlcontour.DemSource({
   url: "https://cyberjapandata.gsi.go.jp/xyz/dem5c_png/{z}/{x}/{y}.png",
   encoding: "gsi", //mapbox or terrarium or gsi
   maxzoom: 15, // dem_png → 14，5a,b,c → 15
-});
-var contourSourceNotoE = new mlcontour.DemSource({
-  url: "https://mapdata.qchizu.xyz/95disaster/202401noto_05/{z}/{x}/{y}.png",
-  encoding: "mapbox", //mapbox or terrarium or gsi
-  maxzoom: 17, // dem_png → 14，5a,b,c → 15
 });
 
 /* 
@@ -161,7 +155,6 @@ contourSource10B.setupMaplibre(MapLibreGL);
 contourSource5A.setupMaplibre(MapLibreGL);
 contourSource5B.setupMaplibre(MapLibreGL);
 contourSource5C.setupMaplibre(MapLibreGL);
-contourSourceNotoE.setupMaplibre(MapLibreGL);
 /*
 contourSourceMixed.setupMaplibre(MapLibreGL);
 contourSourceTochigi.setupMaplibre(MapLibreGL);
@@ -182,7 +175,14 @@ var contourInterval = {
 };
 
 // addProtocolを設定
-//MapLibreGL.addProtocol('numpng', makeNumPngProtocol());
+MapLibreGL.addProtocol('numpng', makeNumPngProtocol());
+
+// Terrain-RGB形式への変換モジュール
+//import { makeNumPngProtocol } from './numPngProtocol.js'
+
+// addProtocolの設定
+//let protocol = new pmtiles.Protocol();
+//MapLibreGL.addProtocol("pmtiles", protocol.tile);
 
 const map = new MapLibreGL.Map({
   container: "map",
@@ -220,7 +220,7 @@ const map = new MapLibreGL.Map({
       //terrain用
       gsidem10B: {
         type: 'raster-dem',
-        tiles: ['gsidem://https://cyberjapandata.gsi.go.jp/xyz/dem_png/{z}/{x}/{y}.png'],
+        tiles: ['numpng://tiles.gsj.jp/tiles/elev/mixed/{z}/{y}/{x}.png'],
         attribution: '<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank">地理院タイル</a>',
         maxzoom: 14,
         tileSize: 256,
@@ -246,20 +246,14 @@ const map = new MapLibreGL.Map({
         maxzoom: 15,
         tileSize: 256,
       },
-      NotoE: {
-        type: 'raster-dem',
-        tiles: ['https://mapdata.qchizu.xyz/95disaster/202401noto_05/{z}/{x}/{y}.png'],
-        attribution: '<a href="https://info.qchizu.xyz" target="_blank">Ｑ地図タイル</a>(<a href="https://www.geospatial.jp/ckan/dataset/aac-disaster-20240101-dem" target="_blank">朝日航洋㈱</a>(<a href="https://www.geospatial.jp/ckan/dataset/2024-notoeast-pc" target="_blank">AIGID</a>(石川県測量成果)))',
-        maxzoom: 17,
-        tileSize: 256,
-      },
       /*
       gsjdemmixed: {
         type: 'raster-dem',
-        tiles: ['numpng://tiles.gsj.jp/tiles/elev/mixed/{z}/{y}/{x}.png'],
+        tiles: ['gsidem://https://tiles.gsj.jp/tiles/elev/mixed/{z}/{y}/{x}.png'],
         attribution: '<a href="https://gbank.gsj.jp/seamless/elev/" target="_blank">産総研地質調査総合センターウェブサイト</a>',
         maxzoom: 17,
         tileSize: 256,
+      },
       tochigidem: {
         type: 'raster-dem',
         tiles: ['https://rinya-tochigi.geospatial.jp/2023/rinya/tile/terrainRGB/{z}/{x}/{y}.png'],
@@ -279,9 +273,9 @@ const map = new MapLibreGL.Map({
       //hillshade用
       gsidem10B2: {
         type: 'raster-dem',
-        tiles: ['gsidem://https://cyberjapandata.gsi.go.jp/xyz/dem_png/{z}/{x}/{y}.png'],
+        tiles: ['numpng://tiles.gsj.jp/tiles/elev/mixed/{z}/{y}/{x}.png'],
         attribution: '<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank">地理院タイル</a>',
-        maxzoom: 14,
+        maxzoom: 17,
         tileSize: 256,
       },
       gsidem5A2: {
@@ -305,19 +299,10 @@ const map = new MapLibreGL.Map({
         maxzoom: 15,
         tileSize: 256,
       },
-      NotoE2: {
-        type: 'raster-dem',
-        tiles: ['https://mapdata.qchizu.xyz/95disaster/202401noto_05/{z}/{x}/{y}.png'],
-        attribution: '<a href="https://info.qchizu.xyz" target="_blank">Ｑ地図タイル</a>(<a href="https://www.geospatial.jp/ckan/dataset/aac-disaster-20240101-dem" target="_blank">朝日航洋㈱</a>(<a href="https://www.geospatial.jp/ckan/dataset/2024-notoeast-pc" target="_blank">AIGID</a>(石川県測量成果)))',
-        maxzoom: 17,
-        tileSize: 256,
-      },
-
       /*
       gsjdemmixed2: {
         type: 'raster-dem',
-        //tiles: ['numpng://tiles.gsj.jp/tiles/elev/mixed/{z}/{y}/{x}.png'],
-        tiles: ['https://mapdata.qchizu.xyz/test/{z}/{x}/{y}.png'],
+        tiles: ['gsidem://https://tiles.gsj.jp/tiles/elev/mixed/{z}/{y}/{x}.png'],
         attribution: '<a href="https://gbank.gsj.jp/seamless/elev/" target="_blank">産総研地質調査総合センターウェブサイト</a>',
         maxzoom: 17,
         tileSize: 256,
@@ -384,20 +369,6 @@ const map = new MapLibreGL.Map({
         type: "vector",
         tiles: [
           contourSource5C.contourProtocolUrl({
-            // meters to feet
-            multiplier: 1, //★変更前　3.28084
-            thresholds: contourInterval,
-            elevationKey: "ele",
-            levelKey: "level",
-            contourLayer: "contours",
-          }),
-        ],
-        maxzoom: 18,
-      },
-      contoursNotoE: {
-        type: "vector",
-        tiles: [
-          contourSourceNotoE.contourProtocolUrl({
             // meters to feet
             multiplier: 1, //★変更前　3.28084
             thresholds: contourInterval,
