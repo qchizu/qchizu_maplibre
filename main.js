@@ -134,7 +134,7 @@ var contourSource5C = new mlcontour.DemSource({
   maxzoom: 15, // dem_png → 14，5a,b,c → 15
 });
 var contourSourceNotoE = new mlcontour.DemSource({
-  url: "https://mapdata.qchizu.xyz/95disaster/202401noto_05/{z}/{x}/{y}.png",
+  url: "https://mapdata.qchizu.xyz/94dem/ishikawa_01/{z}/{x}/{y}.png",
   encoding: "mapbox", //mapbox or terrarium or gsi
   maxzoom: 17, // dem_png → 14，5a,b,c → 15
 });
@@ -216,6 +216,13 @@ const map = new MapLibreGL.Map({
         tileSize: 256,
         maxzoom: 18,
       },
+      p17_ishikawa_f_01: {
+        type: "raster",
+        tiles: ["https://mapdata.qchizu2.xyz/17p/ishikawa_f_01/{z}/{x}/{y}.png"],
+        attribution: '<a target="_blank"href="https://info.qchizu.xyz">Q地図タイル</a>(AIGID<a target="_blank"href="https://www.geospatial.jp/ckan/dataset/2024-notoeast-ortho">1</a>、<a target="_blank"href="https://www.geospatial.jp/ckan/dataset/2024-notowest-ortho">2</a>(石川県))',
+        tileSize: 256,
+        maxzoom: 19,
+      },
 
       //terrain用
       gsidem10B: {
@@ -248,7 +255,7 @@ const map = new MapLibreGL.Map({
       },
       NotoE: {
         type: 'raster-dem',
-        tiles: ['https://mapdata.qchizu.xyz/95disaster/202401noto_05/{z}/{x}/{y}.png'],
+        tiles: ['https://mapdata.qchizu.xyz/94dem/ishikawa_01/{z}/{x}/{y}.png'],
         attribution: '<a href="https://info.qchizu.xyz" target="_blank">Ｑ地図タイル</a>(<a href="https://www.geospatial.jp/ckan/dataset/aac-disaster-20240101-dem" target="_blank">朝日航洋㈱</a>(<a href="https://www.geospatial.jp/ckan/dataset/2024-notoeast-pc" target="_blank">AIGID</a>(石川県測量成果)))',
         maxzoom: 17,
         tileSize: 256,
@@ -307,7 +314,7 @@ const map = new MapLibreGL.Map({
       },
       NotoE2: {
         type: 'raster-dem',
-        tiles: ['https://mapdata.qchizu.xyz/95disaster/202401noto_05/{z}/{x}/{y}.png'],
+        tiles: ['https://mapdata.qchizu.xyz/94dem/ishikawa_01/{z}/{x}/{y}.png'],
         attribution: '<a href="https://info.qchizu.xyz" target="_blank">Ｑ地図タイル</a>(<a href="https://www.geospatial.jp/ckan/dataset/aac-disaster-20240101-dem" target="_blank">朝日航洋㈱</a>(<a href="https://www.geospatial.jp/ckan/dataset/2024-notoeast-pc" target="_blank">AIGID</a>(石川県測量成果)))',
         maxzoom: 17,
         tileSize: 256,
@@ -489,6 +496,14 @@ const map = new MapLibreGL.Map({
         },
       },
       {
+        id: "p17_ishikawa_f_01",
+        type: "raster",
+        source: "p17_ishikawa_f_01",
+        layout: {
+          visibility: "none",
+        },
+      },
+      {
         id: "hillshade",
         type: "hillshade",
         source: "gsidem10B2",
@@ -582,6 +597,7 @@ map.on("load", () => {
       "gsi_std" : "標準地図",
       "gsi_pale" : "淡色地図",
       "gsi_seamlessphoto" : "写真",
+      "p17_ishikawa_f_01" : "石川県2020,2022",
       "white-background" : "背景なし",
       },
     overLayers: {
