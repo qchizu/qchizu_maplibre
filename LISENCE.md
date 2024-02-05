@@ -42,8 +42,6 @@ Please see the following for the detail.
    - License: BSD 3-Clause License
    - License Details: https://github.com/onthegomap/maplibre-contour/blob/main/LICENSE
 
-1.4 gsi-terrain-dem-on-maplibre-gl-js https://github.com/shi-works/gsi-terrain-dem-on-maplibre-gl-js-demo
-   - Copyright (c) 2023 Youhei Shiwaku
+1.4 demTranscoderProtocol.js (Based on numPngProtocol.js by NISHIOKA Yoshiharu, Apache License 2.0)
+   - Copyright (c) 2024 全国Ｑ地図管理者
    - License: MIT License
-   - License Details: https://github.com/shi-works/gsi-terrain-dem-on-maplibre-gl-js-demo/blob/main/LICENSE
-

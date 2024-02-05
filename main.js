@@ -2,171 +2,80 @@ import MapLibreGL from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import OpacityControl from "maplibre-gl-opacity";
 import "maplibre-gl-opacity/dist/maplibre-gl-opacity.css";
-import "./src/maplibre-gl-gsi-terrain-fast-png";
-//import { makeNumPngProtocol } from "./src/numPngProtocol.js";
+import { demTranscoderProtocol } from "./src/demTranscoderProtocol.js";
+import { png2ReliefProtocol } from "./src/png2ReliefProtocol.js";
 
-document.addEventListener("DOMContentLoaded", function () {
-  var DemSourceSelector = document.getElementById("Dem_Source_Selector");
-  // セレクトボックスの変更イベントを監視
-  DemSourceSelector.addEventListener("change", function () {
-    var selectedSource = DemSourceSelector.value;
-    var hillshadeCheckbox = document.getElementById("hillshade");
-    map.removeLayer("hillshade");
+// addProtocolを設定
+MapLibreGL.addProtocol('gsi', demTranscoderProtocol("gsi", "gsi"));
+MapLibreGL.addProtocol('reliefGsi', png2ReliefProtocol('reliefGsi',"gsi",true));
+MapLibreGL.addProtocol('reliefMapbox', png2ReliefProtocol('reliefMapbox',"mapbox",true));
 
-    // 選択されたソースに応じて"hillshade" レイヤーのソースを変更
-    map.addLayer({
-      id: "hillshade",
-      type: "hillshade",
-      source: selectedSource + "2", //次のようなエラーが出るため別ソースを使用　You are using the same source for a hillshade layer and for 3D terrain. Please consider using two separate sources to improve rendering quality.
-      paint: {
-        "hillshade-illumination-anchor": "map",
-        "hillshade-exaggeration": 0.5,
-      },
-      layout: {
-        visibility: hillshadeCheckbox.checked ? "visible" : "none"
-      },
-    });
-
-    map.removeControl(terrainControl);
-
-    // 新しいソースで地形コントロールを再作成
-    terrainControl = new MapLibreGL.TerrainControl({
-      source: selectedSource,
-      exaggeration: 1
-    });
-    // 新しい地形コントロールを地図に追加
-    map.addControl(terrainControl);
-
-    // ボタンを押して地形を再描画しないと画面が切り替わらないため、追加
-    var terrainOff = document.querySelector('.maplibregl-ctrl-terrain-enabled');
-    if (terrainOff) {
-        terrainOff.click();
-        var terrainOn = document.querySelector('.maplibregl-ctrl-terrain');
-        terrainOn.click();
-    }
-
-    /* map.setTerrain({ source: selectedSource, exaggeration: 1.0 }); このコードであればリアルタイムで変更を反映できるが、動作が遅い*/
-
-    //updateContourLayer(selectedSource);
-
-    map.removeLayer("contours");
-    map.removeLayer("contour-text");
-
-    var contoursCheckbox = document.getElementById("contours");
-    var contourTextCheckbox = document.getElementById("contour-text");
-
-    var dem2ContourSource = {
-      "gsidem10B": "contours10B",
-      "gsidem5A": "contours5A",
-      "gsidem5B": "contours5B",
-      "gsidem5C": "contours5C",
-      "NotoE": "contoursNotoE",
-      //"gsjdemmixed": "contoursMixed",
-      //"tochigidem": "contourSourceTochigi",
-      //"kochidem": "contourSourceKochi",
-    };
-
-    map.addLayer({
-      id: "contours",
-      type: "line",
-      source: dem2ContourSource[selectedSource],
-      "source-layer": "contours",
-      paint: {
-        "line-color": "rgba(0,0,0, 0.5)",
-        "line-width": ["*", ["match", ["get", "level"], 1, 1, 0.5],2] //★最後の引数で線の太さを調整
-      },
-      layout: {
-        "line-join": "round",
-        visibility: contoursCheckbox.checked ? "visible" : "none"
-      },
-    });
-
-    map.addLayer({
-      id: "contour-text",
-      type: "symbol",
-      source: dem2ContourSource[selectedSource],
-      "source-layer": "contours",
-      filter: [">", ["get", "level"], 0],
-      paint: {
-        "text-halo-color": "white",
-        "text-halo-width": 1,
-      },
-      layout: {
-        "symbol-placement": "line",
-        "text-anchor": "center",
-        "text-size": 12,
-        "text-field": [
-          "concat",
-          ["number-format", ["get", "ele"], {}],
-          "", //単位を表示する場合はここに入れる
-        ],
-        "text-font": ["Noto Sans Bold"],
-        visibility: contourTextCheckbox.checked ? "visible" : "none"
-      },
-    });
-
-    // レイヤーを再描画
-    map.triggerRepaint();
-
-    });
-
-});
-
-//等高線描画用
-var contourSource10B = new mlcontour.DemSource({
-  url: "https://cyberjapandata.gsi.go.jp/xyz/dem_png/{z}/{x}/{y}.png",
-  encoding: "gsi", //mapbox or terrarium or gsi
-  maxzoom: 14, // dem_png → 14，5a,b,c → 15
-});
-var contourSource5A = new mlcontour.DemSource({
-  url: "https://cyberjapandata.gsi.go.jp/xyz/dem5a_png/{z}/{x}/{y}.png",
-  encoding: "gsi", //mapbox or terrarium or gsi
-  maxzoom: 15, // dem_png → 14，5a,b,c → 15
-});
-var contourSource5B = new mlcontour.DemSource({
-  url: "https://cyberjapandata.gsi.go.jp/xyz/dem5b_png/{z}/{x}/{y}.png",
-  encoding: "gsi", //mapbox or terrarium or gsi
-  maxzoom: 15, // dem_png → 14，5a,b,c → 15
-});
-var contourSource5C = new mlcontour.DemSource({
-  url: "https://cyberjapandata.gsi.go.jp/xyz/dem5c_png/{z}/{x}/{y}.png",
-  encoding: "gsi", //mapbox or terrarium or gsi
-  maxzoom: 15, // dem_png → 14，5a,b,c → 15
-});
-var contourSourceNotoE = new mlcontour.DemSource({
-  url: "https://mapdata.qchizu.xyz/94dem/ishikawa_01/{z}/{x}/{y}.png",
-  encoding: "mapbox", //mapbox or terrarium or gsi
-  maxzoom: 17, // dem_png → 14，5a,b,c → 15
-});
-
-/* 
-var contourSourceMixed = new mlcontour.DemSource({
-  url: "https://tiles.gsj.jp/tiles/elev/mixed/{z}/{y}/{x}.png",
-  encoding: "gsi", //mapbox or terrarium or gsi
-  maxzoom: 17, // dem_png → 14，5a,b,c → 15
-});
-var contourSourceTochigi = new mlcontour.DemSource({
-  url: "https://rinya-tochigi.geospatial.jp/2023/rinya/tile/terrainRGB/{z}/{x}/{y}.png",
-  encoding: "mapbox", //mapbox or terrarium or gsi
-  maxzoom: 18, // dem_png → 14，5a,b,c → 15
-});
-var contourSourceKochi = new mlcontour.DemSource({
-  url: "https://rinya-kochi.geospatial.jp/2023/rinya/tile/terrainRGB/{z}/{x}/{y}.png",
-  encoding: "mapbox", //mapbox or terrarium or gsi
-  maxzoom: 18, // dem_png → 14，5a,b,c → 15
-}); 
-*/
-
-contourSource10B.setupMaplibre(MapLibreGL);
-contourSource5A.setupMaplibre(MapLibreGL);
-contourSource5B.setupMaplibre(MapLibreGL);
-contourSource5C.setupMaplibre(MapLibreGL);
-contourSourceNotoE.setupMaplibre(MapLibreGL);
-/*
-contourSourceMixed.setupMaplibre(MapLibreGL);
-contourSourceTochigi.setupMaplibre(MapLibreGL);
-contourSourceKochi.setupMaplibre(MapLibreGL);
-*/
+//png標高タイルの設定（index.htmlのリストも修正のこと）
+const demSources = {
+  "gsi10B": {
+    tiles: ['https://cyberjapandata.gsi.go.jp/xyz/dem_png/{z}/{x}/{y}.png'],
+    encoding: "gsi",
+    attribution: '<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank">地理院タイル</a>',
+    maxzoom: 14,
+    tileSize: 256,
+  },
+  "gsi5A": {
+    tiles: ['https://cyberjapandata.gsi.go.jp/xyz/dem5a_png/{z}/{x}/{y}.png'],
+    encoding: "gsi",
+    attribution: '<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank">地理院タイル</a>',
+    maxzoom: 15,
+    tileSize: 256,
+  },
+  "gsi5B": {
+    tiles: ['https://cyberjapandata.gsi.go.jp/xyz/dem5b_png/{z}/{x}/{y}.png'],
+    encoding: "gsi",
+    attribution: '<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank">地理院タイル</a>',
+    maxzoom: 15,
+    tileSize: 256,
+  },
+  "gsi5C": {
+    tiles: ['https://cyberjapandata.gsi.go.jp/xyz/dem5c_png/{z}/{x}/{y}.png'],
+    encoding: "gsi",
+    attribution: '<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank">地理院タイル</a>',
+    maxzoom: 15,
+    tileSize: 256,
+  },
+  "gsjMixed": {
+    tiles: ['https://tiles.gsj.jp/tiles/elev/land/{z}/{y}/{x}.png'],
+    encoding: "gsi",
+    attribution: '<a href="https://gbank.gsj.jp/seamless/elev/" target="_blank">産総研地質調査総合センター</a>',
+    maxzoom: 17,
+    tileSize: 256,
+  },
+  "gsiNotoDsm": {
+    tiles: ['https://maps.gsi.go.jp/xyz/2mDSM/{z}/{x}/{y}.png'],
+    encoding: "mapbox",
+    attribution: '<a href="https://www.gsi.go.jp/johofukyu/johofukyu240122_00001.html" target="_blank">国土地理院</a>',
+    maxzoom: 15,
+    tileSize: 256,
+  },
+  "qchizuNotoE": {
+    tiles: ['https://mapdata.qchizu.xyz/94dem/ishikawa_01/{z}/{x}/{y}.png'],
+    encoding: "mapbox",
+    attribution: '<a href="https://info.qchizu.xyz" target="_blank">Ｑ地図タイル</a>(<a href="https://www.geospatial.jp/ckan/dataset/aac-disaster-20240101-dem" target="_blank">朝日航洋㈱</a>(<a href="https://www.geospatial.jp/ckan/dataset/2024-notoeast-pc" target="_blank">AIGID</a>(石川県測量成果))使用)',
+    maxzoom: 17,
+    tileSize: 256,
+  },
+  "qchizuNotoW": {
+    tiles: ['https://mapdata.qchizu.xyz/94dem/ishikawa_02/{z}/{x}/{y}.png'],
+    encoding: "mapbox",
+    attribution: '<a href="https://info.qchizu.xyz" target="_blank">Ｑ地図タイル</a>(<a href="https://www.geospatial.jp/ckan/dataset/2024-notowest-ground" target="_blank">AIGID</a>(石川県測量成果))を使用)',
+    maxzoom: 17,
+    tileSize: 256,
+  },
+  "qchizuTest1": {
+    tiles: ['https://mapdata.qchizu.xyz/94dem/xxxxx/{z}/{x}/{y}.png'],
+    encoding: "mapbox",
+    attribution: 'テスト用',
+    maxzoom: 15,
+    tileSize: 256,
+  },
+};
 
 //等高線間隔
 var contourInterval = {
@@ -181,8 +90,207 @@ var contourInterval = {
   18: [1, 5],
 };
 
-// addProtocolを設定
-//MapLibreGL.addProtocol('numpng', makeNumPngProtocol());
+let DemSourceSelector = document.getElementById("Dem_Source_Selector");
+let terrainControl;
+
+//Mapが読み込まれたときやソースが変更されたときに呼び出される関数
+function updateMapLayers() {
+  var selectedSource = DemSourceSelector.value;
+
+  //【"relief"レイヤーの処理】
+  if (map.getLayer("relief")) {
+    map.removeLayer("relief");
+  }
+  if (map.getSource("reliefSource")) {
+    map.removeSource("reliefSource");
+  }
+
+  let reliefTilesUrl;
+  if (demSources[selectedSource]["encoding"] === "gsi") {
+    reliefTilesUrl = demSources[selectedSource].tiles.map(url => "reliefGsi://" + url);
+  } else if (demSources[selectedSource]["encoding"] === "mapbox"){
+    reliefTilesUrl = demSources[selectedSource].tiles.map(url => "reliefMapbox://" + url);
+  }
+
+  map.addSource(
+    "reliefSource", {
+      "type": "raster",
+      "tiles": reliefTilesUrl,
+      "attribution": demSources[selectedSource]["attribution"],
+      "maxzoom": demSources[selectedSource]["maxzoom"],
+      "tileSize": demSources[selectedSource]["tileSize"],
+    }
+  ); 
+
+  var reliefCheckbox = document.getElementById("relief");
+
+  map.addLayer({
+    id: "relief",
+    type: "raster",
+    source: "reliefSource",
+    layout: {
+      visibility: reliefCheckbox.checked ? "visible" : "none"
+    },
+  });
+
+  //【hillshadeレイヤーの処理】
+  if (map.getLayer("hillshade")) {
+    map.removeLayer("hillshade");
+  }
+  if (map.getSource("hillshadeSource")) {
+    map.removeSource("hillshadeSource");
+  }
+
+  let hillshadeTilesUrl;
+  if (demSources[selectedSource]["encoding"] === "gsi") {
+    hillshadeTilesUrl = demSources[selectedSource].tiles.map(url => "gsi://" + url);
+  } else if (demSources[selectedSource]["encoding"] === "mapbox"){
+    hillshadeTilesUrl = demSources[selectedSource].tiles;
+  }
+
+  map.addSource(
+    "hillshadeSource", {
+      "type": "raster-dem",
+      "tiles": hillshadeTilesUrl,
+      "attribution": demSources[selectedSource]["attribution"],
+      "maxzoom": demSources[selectedSource]["maxzoom"],
+      "tileSize": demSources[selectedSource]["tileSize"],
+    }
+  ); 
+
+  var hillshadeCheckbox = document.getElementById("hillshade");
+
+  map.addLayer({
+    id: "hillshade",
+    type: "hillshade",
+    source: "hillshadeSource",
+    paint: {
+      "hillshade-illumination-anchor": "map",
+      "hillshade-exaggeration": 0.5,
+    },
+    layout: {
+      visibility: hillshadeCheckbox.checked ? "visible" : "none"
+    },
+  });
+
+  //【等高線の処理】
+  var contour = new mlcontour.DemSource({
+    url:  demSources[selectedSource]["tiles"][0],
+    encoding: demSources[selectedSource]["encoding"], //mapbox or terrarium or gsi
+    maxzoom: demSources[selectedSource]["maxzoom"], // dem_png → 14，5a,b,c → 15
+  });
+  contour.setupMaplibre(MapLibreGL);
+
+  if (map.getLayer("contours")) {
+    map.removeLayer("contours");
+  }
+  if (map.getLayer("contour-text")) {
+    map.removeLayer("contour-text");
+  }
+  if (map.getSource("contourSource")) {
+    map.removeSource("contourSource");
+  }
+
+  map.addSource(
+    "contourSource", {
+      "type": "vector",
+      "tiles": [
+        contour.contourProtocolUrl({
+          multiplier: 1, // meters to feet
+          thresholds: contourInterval,
+          elevationKey: "ele",
+          levelKey: "level",
+          contourLayer: "contours",
+        }),
+      ],
+      "maxzoom": 18, //この意味要検討
+    }
+  );
+
+  var contoursCheckbox = document.getElementById("contours");
+  var contourTextCheckbox = document.getElementById("contour-text");
+
+  map.addLayer({
+    id: "contours",
+    type: "line",
+    source: "contourSource",
+    "source-layer": "contours",
+    paint: {
+      "line-color": "rgba(0,0,0, 0.5)",
+      "line-width": ["*", ["match", ["get", "level"], 1, 1, 0.5],2] //★最後の引数で線の太さを調整
+    },
+    layout: {
+      "line-join": "round",
+      visibility: contoursCheckbox.checked ? "visible" : "none"
+    },
+  });
+
+  map.addLayer({
+    id: "contour-text",
+    type: "symbol",
+    source: "contourSource",
+    "source-layer": "contours",
+    filter: [">", ["get", "level"], 0],
+    paint: {
+      "text-halo-color": "white",
+      "text-halo-width": 1,
+    },
+    layout: {
+      "symbol-placement": "line",
+      "text-anchor": "center",
+      "text-size": 12,
+      "text-field": [
+        "concat",
+        ["number-format", ["get", "ele"], {}],
+        "", //単位を表示する場合はここに入れる
+      ],
+      "text-font": ["Noto Sans Bold"],
+      visibility: contourTextCheckbox.checked ? "visible" : "none"
+    },
+  });
+
+  //【terrainControlの処理】
+  if (map.getSource("terrainSource")) {
+    map.removeSource("terrainSource");
+  }
+
+  let terrainTilesUrl;
+  if (demSources[selectedSource]["encoding"] === "gsi") {
+    terrainTilesUrl = demSources[selectedSource].tiles.map(url => "gsi://" + url);
+  } else if (demSources[selectedSource]["encoding"] === "mapbox") {
+    terrainTilesUrl = demSources[selectedSource].tiles;
+  }
+
+  console.log(terrainTilesUrl);
+
+  map.addSource("terrainSource", {
+    "type": "raster-dem",
+    "tiles": terrainTilesUrl,
+    "attribution": demSources[selectedSource]["attribution"],
+    "maxzoom": demSources[selectedSource]["maxzoom"],
+    "tileSize": demSources[selectedSource]["tileSize"],
+  });
+
+  map.setTerrain({ "source": "terrainSource", "exaggeration": 1 });
+
+  if (typeof terrainControl !== 'undefined') {
+    map.removeControl(terrainControl);
+  }
+
+  terrainControl = new MapLibreGL.TerrainControl({
+    source: "terrainSource",
+    exaggeration: 1,
+  });
+  map.addControl(terrainControl);
+
+  // レイヤーを再描画
+  map.triggerRepaint();
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+  // セレクトボックスの変更イベントを監視
+  DemSourceSelector.addEventListener("change", updateMapLayers);
+});
 
 const map = new MapLibreGL.Map({
   container: "map",
@@ -219,246 +327,24 @@ const map = new MapLibreGL.Map({
       p17_ishikawa_f_01: {
         type: "raster",
         tiles: ["https://mapdata.qchizu2.xyz/17p/ishikawa_f_01/{z}/{x}/{y}.png"],
-        attribution: '<a target="_blank"href="https://info.qchizu.xyz">Q地図タイル</a>(AIGID<a target="_blank"href="https://www.geospatial.jp/ckan/dataset/2024-notoeast-ortho">1</a>、<a target="_blank"href="https://www.geospatial.jp/ckan/dataset/2024-notowest-ortho">2</a>(石川県))',
+        attribution: '<a target="_blank"href="https://info.qchizu.xyz">Q地図タイル</a>(AIGID<a target="_blank"href="https://www.geospatial.jp/ckan/dataset/2024-notoeast-ortho">1</a>、<a target="_blank"href="https://www.geospatial.jp/ckan/dataset/2024-notowest-ortho">2</a>(石川県)複製)',
         tileSize: 256,
         maxzoom: 19,
       },
-
-      //terrain用
-      gsidem10B: {
-        type: 'raster-dem',
-        tiles: ['gsidem://https://cyberjapandata.gsi.go.jp/xyz/dem_png/{z}/{x}/{y}.png'],
-        attribution: '<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank">地理院タイル</a>',
-        maxzoom: 14,
+      ishikawa_cs: {
+        type: "raster",
+        tiles: ["https://www2.ffpri.go.jp/soilmap/tile/cs_noto/{z}/{x}/{y}.png"],
+        attribution: '<<a target="_blank"href="https://www.geospatial.jp/ckan/dataset/2024-notowest-mtopo">森林総研</a>(石川県))',
         tileSize: 256,
-      },
-      gsidem5A: {
-        type: 'raster-dem',
-        tiles: ['gsidem://https://cyberjapandata.gsi.go.jp/xyz/dem5a_png/{z}/{x}/{y}.png'],
-        attribution: '<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank">地理院タイル</a>',
-        maxzoom: 15,
-        tileSize: 256,
-      },
-      gsidem5B: {
-        type: 'raster-dem',
-        tiles: ['gsidem://https://cyberjapandata.gsi.go.jp/xyz/dem5b_png/{z}/{x}/{y}.png'],
-        attribution: '<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank">地理院タイル</a>',
-        maxzoom: 15,
-        tileSize: 256,
-      },
-      gsidem5C: {
-        type: 'raster-dem',
-        tiles: ['gsidem://https://cyberjapandata.gsi.go.jp/xyz/dem5c_png/{z}/{x}/{y}.png'],
-        attribution: '<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank">地理院タイル</a>',
-        maxzoom: 15,
-        tileSize: 256,
-      },
-      NotoE: {
-        type: 'raster-dem',
-        tiles: ['https://mapdata.qchizu.xyz/94dem/ishikawa_01/{z}/{x}/{y}.png'],
-        attribution: '<a href="https://info.qchizu.xyz" target="_blank">Ｑ地図タイル</a>(<a href="https://www.geospatial.jp/ckan/dataset/aac-disaster-20240101-dem" target="_blank">朝日航洋㈱</a>(<a href="https://www.geospatial.jp/ckan/dataset/2024-notoeast-pc" target="_blank">AIGID</a>(石川県測量成果)))',
         maxzoom: 17,
-        tileSize: 256,
       },
-      /*
-      gsjdemmixed: {
-        type: 'raster-dem',
-        tiles: ['numpng://tiles.gsj.jp/tiles/elev/mixed/{z}/{y}/{x}.png'],
-        attribution: '<a href="https://gbank.gsj.jp/seamless/elev/" target="_blank">産総研地質調査総合センターウェブサイト</a>',
-        maxzoom: 17,
+      ishikawa_rrim: {
+        type: "raster",
+        tiles: ["https://xs489works.xsrv.jp/raster-tiles/pref-ishikawa/notowest-red-tiles/{z}/{x}/{y}.png"],
+        attribution: '<a target="_blank"href="https://github.com/shi-works/noto-hanto-earthquake-2024-notowest-3d-terrain-map-on-maplibre-gl-js">shi-works</a>(<a target="_blank"href="https://www.geospatial.jp/ckan/dataset/2024-notowest-mtopo">AIGID</a>(石川県))',
         tileSize: 256,
-      tochigidem: {
-        type: 'raster-dem',
-        tiles: ['https://rinya-tochigi.geospatial.jp/2023/rinya/tile/terrainRGB/{z}/{x}/{y}.png'],
-        attribution: '<a href="https://www.geospatial.jp/ckan/dataset/dem05_tochigi" target="_blank">栃木県</a>',
-        maxzoom: 18,
-        tileSize: 256,
-      },
-      kochidem: {
-        type: 'raster-dem',
-        tiles: ['https://rinya-kochi.geospatial.jp/2023/rinya/tile/terrainRGB/{z}/{x}/{y}.png'],
-        attribution: '<a href="https://www.geospatial.jp/ckan/dataset/dem05_kochi" target="_blank">高知県</a>',
-        maxzoom: 18,
-        tileSize: 256,
-      },
-      */
-
-      //hillshade用
-      gsidem10B2: {
-        type: 'raster-dem',
-        tiles: ['gsidem://https://cyberjapandata.gsi.go.jp/xyz/dem_png/{z}/{x}/{y}.png'],
-        attribution: '<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank">地理院タイル</a>',
-        maxzoom: 14,
-        tileSize: 256,
-      },
-      gsidem5A2: {
-        type: 'raster-dem',
-        tiles: ['gsidem://https://cyberjapandata.gsi.go.jp/xyz/dem5a_png/{z}/{x}/{y}.png'],
-        attribution: '<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank">地理院タイル</a>',
-        maxzoom: 15,
-        tileSize: 256,
-      },
-      gsidem5B2: {
-        type: 'raster-dem',
-        tiles: ['gsidem://https://cyberjapandata.gsi.go.jp/xyz/dem5b_png/{z}/{x}/{y}.png'],
-        attribution: '<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank">地理院タイル</a>',
-        maxzoom: 15,
-        tileSize: 256,
-      },
-      gsidem5C2: {
-        type: 'raster-dem',
-        tiles: ['gsidem://https://cyberjapandata.gsi.go.jp/xyz/dem5c_png/{z}/{x}/{y}.png'],
-        attribution: '<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank">地理院タイル</a>',
-        maxzoom: 15,
-        tileSize: 256,
-      },
-      NotoE2: {
-        type: 'raster-dem',
-        tiles: ['https://mapdata.qchizu.xyz/94dem/ishikawa_01/{z}/{x}/{y}.png'],
-        attribution: '<a href="https://info.qchizu.xyz" target="_blank">Ｑ地図タイル</a>(<a href="https://www.geospatial.jp/ckan/dataset/aac-disaster-20240101-dem" target="_blank">朝日航洋㈱</a>(<a href="https://www.geospatial.jp/ckan/dataset/2024-notoeast-pc" target="_blank">AIGID</a>(石川県測量成果)))',
-        maxzoom: 17,
-        tileSize: 256,
-      },
-
-      /*
-      gsjdemmixed2: {
-        type: 'raster-dem',
-        //tiles: ['numpng://tiles.gsj.jp/tiles/elev/mixed/{z}/{y}/{x}.png'],
-        tiles: ['https://mapdata.qchizu.xyz/test/{z}/{x}/{y}.png'],
-        attribution: '<a href="https://gbank.gsj.jp/seamless/elev/" target="_blank">産総研地質調査総合センターウェブサイト</a>',
-        maxzoom: 17,
-        tileSize: 256,
-      },
-      tochigidem2: {
-        type: 'raster-dem',
-        tiles: ['https://rinya-tochigi.geospatial.jp/2023/rinya/tile/terrainRGB/{z}/{x}/{y}.png'],
-        attribution: '<a href="https://www.geospatial.jp/ckan/dataset/dem05_tochigi" target="_blank">栃木県</a>',
-        maxzoom: 18,
-        tileSize: 256,
-      },
-      kochidem2: {
-        type: 'raster-dem',
-        tiles: ['https://rinya-kochi.geospatial.jp/2023/rinya/tile/terrainRGB/{z}/{x}/{y}.png'],
-        attribution: '<a href="https://www.geospatial.jp/ckan/dataset/dem05_kochi" target="_blank">高知県</a>',
-        maxzoom: 18,
-        tileSize: 256,
-      },
-      */
-
-      contours10B: {
-        type: "vector",
-        tiles: [
-          contourSource10B.contourProtocolUrl({
-            // meters to feet
-            multiplier: 1, //★変更前　3.28084
-            thresholds: contourInterval,
-            elevationKey: "ele",
-            levelKey: "level",
-            contourLayer: "contours",
-          }),
-        ],
         maxzoom: 18,
       },
-      contours5A: {
-        type: "vector",
-        tiles: [
-          contourSource5A.contourProtocolUrl({
-            // meters to feet
-            multiplier: 1, //★変更前　3.28084
-            thresholds: contourInterval,
-            elevationKey: "ele",
-            levelKey: "level",
-            contourLayer: "contours",
-          }),
-        ],
-        maxzoom: 18,
-      },
-      contours5B: {
-        type: "vector",
-        tiles: [
-          contourSource5B.contourProtocolUrl({
-            // meters to feet
-            multiplier: 1, //★変更前　3.28084
-            thresholds: contourInterval,
-            elevationKey: "ele",
-            levelKey: "level",
-            contourLayer: "contours",
-          }),
-        ],
-        maxzoom: 18,
-      },
-      contours5C: {
-        type: "vector",
-        tiles: [
-          contourSource5C.contourProtocolUrl({
-            // meters to feet
-            multiplier: 1, //★変更前　3.28084
-            thresholds: contourInterval,
-            elevationKey: "ele",
-            levelKey: "level",
-            contourLayer: "contours",
-          }),
-        ],
-        maxzoom: 18,
-      },
-      contoursNotoE: {
-        type: "vector",
-        tiles: [
-          contourSourceNotoE.contourProtocolUrl({
-            // meters to feet
-            multiplier: 1, //★変更前　3.28084
-            thresholds: contourInterval,
-            elevationKey: "ele",
-            levelKey: "level",
-            contourLayer: "contours",
-          }),
-        ],
-        maxzoom: 18,
-      },
-      /*
-      contoursMixed: {
-        type: "vector",
-        tiles: [
-          contourSourceMixed.contourProtocolUrl({
-            // meters to feet
-            multiplier: 1, //★変更前　3.28084
-            thresholds: contourInterval,
-            elevationKey: "ele",
-            levelKey: "level",
-            contourLayer: "contours",
-          }),
-        ],
-        maxzoom: 18,
-      },
-      contourSourceTochigi: {
-        type: "vector",
-        tiles: [
-          contourSourceTochigi.contourProtocolUrl({
-            // meters to feet
-            multiplier: 1, //★変更前　3.28084
-            thresholds: contourInterval,
-            elevationKey: "ele",
-            levelKey: "level",
-            contourLayer: "contours",
-          }),
-        ],
-        maxzoom: 18,
-      },
-      contourSourceKochi: {
-        type: "vector",
-        tiles: [
-          contourSourceKochi.contourProtocolUrl({
-            // meters to feet
-            multiplier: 1, //★変更前　3.28084
-            thresholds: contourInterval,
-            elevationKey: "ele",
-            levelKey: "level",
-            contourLayer: "contours",
-          }),
-        ],
-        maxzoom: 18,
-      },
-    */
     },
     
     layers: [
@@ -504,52 +390,59 @@ const map = new MapLibreGL.Map({
         },
       },
       {
-        id: "hillshade",
-        type: "hillshade",
-        source: "gsidem10B2",
+        id: "ishikawa_cs",
+        type: "raster",
+        source: "ishikawa_cs",
+        layout: {
+          visibility: "none",
+        },
+      },
+      {
+        id: "ishikawa_rrim",
+        type: "raster",
+        source: "ishikawa_rrim",
+        layout: {
+          visibility: "none",
+        },
+      },
+      {
+        id: "relief", //段彩図ダミーレイヤー
+        type: "background",
         paint: {
-          "hillshade-illumination-anchor": "map",
-          "hillshade-exaggeration": 0.5,
+          "background-color": "#9A6229",
         },
         layout: {
           visibility: "none"
         },
       },
       {
-        id: "contours",
-        type: "line",
-        source: "contours10B",
-        "source-layer": "contours",
+        id: "hillshade", //陰影ダミーレイヤー
+        type: "background",
         paint: {
-          "line-color": "rgba(0,0,0, 0.5)",
-          "line-width": ["*", ["match", ["get", "level"], 1, 1, 0.5],2] //★最後の引数で線の太さを調整
+          "background-color": "#666666",
         },
         layout: {
-          "line-join": "round",
-          visibility: "none",
+          visibility: "none"
         },
       },
       {
-        id: "contour-text",
-        type: "symbol",
-        source: "contours10B",
-        "source-layer": "contours",
-        filter: [">", ["get", "level"], 0],
+        id: "contours", //等高線ダミーレイヤー
+        type: "background",
         paint: {
-          "text-halo-color": "white",
-          "text-halo-width": 1,
+          "background-color": "#008000",
         },
         layout: {
-          "symbol-placement": "line",
-          "text-anchor": "center",
-          "text-size": 12,
-          "text-field": [
-            "concat",
-            ["number-format", ["get", "ele"], {}],
-            "", //単位を表示する場合はここに入れる
-          ],
-          "text-font": ["Noto Sans Bold"],
-          visibility: "none",
+          visibility: "none"
+        },
+      },
+      {
+        id: "contour-text", //等高線標高ダミーレイヤー
+        type: "background",
+        paint: {
+          "background-color": "#002000",
+        },
+        layout: {
+          visibility: "none"
         },
       },
     ],
@@ -584,21 +477,18 @@ map.addControl(new MapLibreGL.ScaleControl({
     unit: 'metric'
 }));
 
-// 3D地形コントロール表示
-var terrainControl = new MapLibreGL.TerrainControl({
-  source: 'gsidem10B',
-  exaggeration: 1 // 標高を強調する倍率
-});
-map.addControl(terrainControl);
-
 map.on("load", () => {
+
   const opacity = new OpacityControl({
     baseLayers: {
       "gsi_std" : "標準地図",
       "gsi_pale" : "淡色地図",
       "gsi_seamlessphoto" : "写真",
-      "p17_ishikawa_f_01" : "石川県2020,2022",
       "white-background" : "背景なし",
+      "p17_ishikawa_f_01" : "能登写真(2020,2022)",
+      "ishikawa_cs" : "能登CS立体図",
+      "ishikawa_rrim" : "能登西部赤色立体地図",
+      "relief" : "段彩図",
       },
     overLayers: {
       "hillshade" : "陰影",
@@ -608,9 +498,8 @@ map.on("load", () => {
     opacityControl: false,
   });
   map.addControl(opacity, "top-left");
-  
-  // 標高タイルセット
-  map.setTerrain({ 'source': 'gsidem10B', 'exaggeration': 1 });
+
+  updateMapLayers();
 
 });
 
