@@ -3,12 +3,16 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import OpacityControl from "maplibre-gl-opacity";
 import "maplibre-gl-opacity/dist/maplibre-gl-opacity.css";
 import { demTranscoderProtocol } from "./src/demTranscoderProtocol.js";
-import { png2ReliefProtocol } from "./src/png2ReliefProtocol.js";
+import { dem2ReliefProtocol } from "./src/dem2ReliefProtocol.js";
+import { dem2SlopeProtocol } from "./src/dem2SlopeProtocol.js";
 
 // addProtocolを設定
 MapLibreGL.addProtocol('gsi', demTranscoderProtocol("gsi", "gsi"));
-MapLibreGL.addProtocol('reliefGsi', png2ReliefProtocol('reliefGsi',"gsi",true));
-MapLibreGL.addProtocol('reliefMapbox', png2ReliefProtocol('reliefMapbox',"mapbox",true));
+MapLibreGL.addProtocol('reliefGsi', dem2ReliefProtocol('reliefGsi',"gsi",true));
+MapLibreGL.addProtocol('reliefMapbox', dem2ReliefProtocol('reliefMapbox',"mapbox",true));
+MapLibreGL.addProtocol('slopeGsiXy', dem2SlopeProtocol("slopeGsiXy", "gsi" ,"xy"));
+MapLibreGL.addProtocol('slopeGsiYx', dem2SlopeProtocol("slopeGsiYx", "gsi" ,"yx"));
+MapLibreGL.addProtocol('slopeMapboxXy', dem2SlopeProtocol("slopeMapboxXy", "mapbox","xy"));
 
 //png標高タイルの設定（index.htmlのリストも修正のこと）
 const demSources = {
@@ -40,6 +44,13 @@ const demSources = {
     maxzoom: 15,
     tileSize: 256,
   },
+  "qchizu1A": {
+    tiles: ['https://mapdata.qchizu.xyz/94dem/99gsi/1A/01_g/{z}/{x}/{y}.png'],
+    encoding: "gsi",
+    attribution: 'Q地図タイル(測量法に基づく国土地理院長承認(使用)R5JHs727)',
+    maxzoom: 17,
+    tileSize: 256,
+  },
   "gsjMixed": {
     tiles: ['https://tiles.gsj.jp/tiles/elev/land/{z}/{y}/{x}.png'],
     encoding: "gsi",
@@ -49,7 +60,7 @@ const demSources = {
   },
   "gsiNotoDsm": {
     tiles: ['https://maps.gsi.go.jp/xyz/2mDSM/{z}/{x}/{y}.png'],
-    encoding: "mapbox",
+    encoding: "gsi",
     attribution: '<a href="https://www.gsi.go.jp/johofukyu/johofukyu240122_00001.html" target="_blank">国土地理院</a>',
     maxzoom: 15,
     tileSize: 256,
@@ -66,13 +77,6 @@ const demSources = {
     encoding: "mapbox",
     attribution: '<a href="https://info.qchizu.xyz" target="_blank">Ｑ地図タイル</a>(<a href="https://www.geospatial.jp/ckan/dataset/2024-notowest-ground" target="_blank">AIGID</a>(石川県測量成果))を使用)',
     maxzoom: 17,
-    tileSize: 256,
-  },
-  "qchizuTest1": {
-    tiles: ['https://mapdata.qchizu.xyz/94dem/xxxxx/{z}/{x}/{y}.png'],
-    encoding: "mapbox",
-    attribution: 'テスト用',
-    maxzoom: 15,
     tileSize: 256,
   },
 };
@@ -131,6 +135,49 @@ function updateMapLayers() {
     layout: {
       visibility: reliefCheckbox.checked ? "visible" : "none"
     },
+    //before: "gsi_std",
+  });
+
+  //【"slope"レイヤーの処理】
+  if (map.getLayer("slope")) {
+    map.removeLayer("slope");
+  }
+  if (map.getSource("slopeSource")) {
+    map.removeSource("slopeSource");
+  }
+
+  
+  let xyOrder = demSources[selectedSource]["tiles"][0].includes('{x}/{y}') ? 'Xy' : 'Yx';
+  console.log(demSources[selectedSource]["tiles"]);
+
+  let slopeTilesUrl;
+  if (demSources[selectedSource]["encoding"] === "gsi") {
+    slopeTilesUrl = demSources[selectedSource].tiles.map(url => "slopeGsi" + xyOrder + "://" + url);
+  } else if (demSources[selectedSource]["encoding"] === "mapbox"){
+    slopeTilesUrl = demSources[selectedSource].tiles.map(url => "slopeMapbox" + xyOrder + "://" + url);
+  }
+
+  console.log(slopeTilesUrl);
+
+  map.addSource(
+    "slopeSource", {
+      "type": "raster",
+      "tiles": slopeTilesUrl,
+      "attribution": demSources[selectedSource]["attribution"],
+      "maxzoom": demSources[selectedSource]["maxzoom"],
+      "tileSize": demSources[selectedSource]["tileSize"],
+    }
+  ); 
+
+  var slopeCheckbox = document.getElementById("slope");
+
+  map.addLayer({
+    id: "slope",
+    type: "raster",
+    source: "slopeSource",
+    layout: {
+      visibility: slopeCheckbox.checked ? "visible" : "none"
+    },
   });
 
   //【hillshadeレイヤーの処理】
@@ -166,7 +213,8 @@ function updateMapLayers() {
     source: "hillshadeSource",
     paint: {
       "hillshade-illumination-anchor": "map",
-      "hillshade-exaggeration": 0.5,
+      "hillshade-exaggeration": 0.4,
+      "hillshade-highlight-color": "rgb(0,0,0)",
     },
     layout: {
       visibility: hillshadeCheckbox.checked ? "visible" : "none"
@@ -203,7 +251,7 @@ function updateMapLayers() {
           contourLayer: "contours",
         }),
       ],
-      "maxzoom": 18, //この意味要検討
+      "maxzoom": 19, //この意味要検討
     }
   );
 
@@ -250,8 +298,14 @@ function updateMapLayers() {
   });
 
   //【terrainControlの処理】
+  // 立体表示状態かどうかを判定
+  let terrainExists = false;
+  if (map.getTerrain()) {
+      terrainExists = true;
+  }
+
   if (map.getSource("terrainSource")) {
-    map.removeSource("terrainSource");
+      map.removeSource("terrainSource"); // Sourceがあれば削除
   }
 
   let terrainTilesUrl;
@@ -261,8 +315,6 @@ function updateMapLayers() {
     terrainTilesUrl = demSources[selectedSource].tiles;
   }
 
-  console.log(terrainTilesUrl);
-
   map.addSource("terrainSource", {
     "type": "raster-dem",
     "tiles": terrainTilesUrl,
@@ -271,20 +323,21 @@ function updateMapLayers() {
     "tileSize": demSources[selectedSource]["tileSize"],
   });
 
-  map.setTerrain({ "source": "terrainSource", "exaggeration": 1 });
+  //もともと立体表示状態であれば、新しいソースで立体表示にする
+  if (terrainExists) {
+    map.setTerrain({ "source": "terrainSource", "exaggeration": 1 });
+  }
 
   if (typeof terrainControl !== 'undefined') {
     map.removeControl(terrainControl);
   }
 
+  //立体表示のコントロールボタンを追加
   terrainControl = new MapLibreGL.TerrainControl({
     source: "terrainSource",
     exaggeration: 1,
-  });
+  }); 
   map.addControl(terrainControl);
-
-  // レイヤーを再描画
-  map.triggerRepaint();
 }
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -296,7 +349,7 @@ const map = new MapLibreGL.Map({
   container: "map",
   zoom: 4,
   center: [140.084556, 36.104611],
-  pitch: 45,
+  pitch: 0, //初期表示の傾斜角度
   maxPitch: 85, //maxPitch must be less than or equal to 85
   hash: true,
   style: {
@@ -348,15 +401,6 @@ const map = new MapLibreGL.Map({
     },
     
     layers: [
-      //白い背景　レイヤーがないと地形の立体表示時に表示が乱れる
-      {
-        id: "white-background",
-        type: "background",
-        paint: {
-          "background-color": "#ffffff",
-        },
-      },
-      //地図
       {
         id: "gsi_std",
         type: "raster",
@@ -374,11 +418,29 @@ const map = new MapLibreGL.Map({
         },
       },
       {
+        id: "relief", //段彩図ダミーレイヤー
+        type: "background",
+        paint: {
+          "background-color": "#9A6229",
+        },
+        layout: {
+          visibility: "none"
+        },
+      },
+      {
         id: "gsi_seamlessphoto",
         type: "raster",
         source: "gsi_seamlessphoto",
         layout: {
           visibility: "none",
+        },
+      },
+      //白い背景　レイヤーがないと地形の立体表示時に表示が乱れる
+      {
+        id: "white-background",
+        type: "background",
+        paint: {
+          "background-color": "#ffffff",
         },
       },
       {
@@ -406,10 +468,10 @@ const map = new MapLibreGL.Map({
         },
       },
       {
-        id: "relief", //段彩図ダミーレイヤー
+        id: "slope", //傾斜量ダミーレイヤー
         type: "background",
         paint: {
-          "background-color": "#9A6229",
+          "background-color": "#FF0000",
         },
         layout: {
           visibility: "none"
@@ -483,14 +545,15 @@ map.on("load", () => {
     baseLayers: {
       "gsi_std" : "標準地図",
       "gsi_pale" : "淡色地図",
+      "relief" : "段彩図",
       "gsi_seamlessphoto" : "写真",
       "white-background" : "背景なし",
       "p17_ishikawa_f_01" : "能登写真(2020,2022)",
       "ishikawa_cs" : "能登CS立体図",
       "ishikawa_rrim" : "能登西部赤色立体地図",
-      "relief" : "段彩図",
       },
     overLayers: {
+      "slope" : "傾斜量",
       "hillshade" : "陰影",
       "contours" : "等高線",
       "contour-text" : "等高線数値",

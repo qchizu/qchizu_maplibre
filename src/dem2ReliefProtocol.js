@@ -1,10 +1,10 @@
-function png2ReliefProtocol(
+function dem2ReliefProtocol(
     protocol = 'relief',  
     encoding = 'gsi', // 'gsi', 'gsj', 'mapbox', 'terrarium'
     gradation = true, //  true, false
     colorMap = [
         { limit: -99999, color: [255, 255, 255]}, // 無効値の色
-        { limit: -99998, color: [83, 135, 148] }, //0m以下の色
+        { limit: -99998, color: [83, 135, 148] }, //0m未満の色
         { limit: 0, color: [83, 135, 148] }, //0m未満の色（以下同じ）
         { limit: 1, color: [0, 204, 204] },
         { limit: 10, color: [128, 215, 255] },
@@ -21,10 +21,9 @@ function png2ReliefProtocol(
         { limit: 3000, color: [230, 229, 227] },
         { limit: Infinity, color: [255, 255, 255] }
     ]
-    ) {
+) {
     return (params, callback) => {
         const image = new Image();
-
         image.crossOrigin = 'anonymous';
         image.onload = function () {
             const canvas = document.createElement('canvas');
@@ -37,20 +36,22 @@ function png2ReliefProtocol(
             ctx.drawImage(image, 0, 0);
             const imageData = ctx.getImageData(0, 0, width, height);
 
+            // 定数の事前計算
+            const twoToThePowerOf23 = 2 ** 23;
+            const twoToThePowerOf24 = 2 ** 24;
+
             //encodingに応じて標高を計算する関数
             function calculateHeight(encoding, r, g, b) {
                 let h;
                 if (encoding === 'gsi' || encoding === 'gsj') {
-                    const x = Math.pow(2, 16) * r + Math.pow(2, 8) * g + b;
-                    if (x < Math.pow(2, 23)) {
-                        h = x * 0.01;
-                    } else if (x === Math.pow(2, 23)) { //gsjの場合、a=0のときは無効値とされているが、タイルを見ると(r,g,b,a) = (128,0,0,0)となっているので、この処理で問題ない。
+                    const x = r * 65536 + g * 256 + b;
+                    if (x === twoToThePowerOf23) {
                         h = -99999;
                     } else {
-                        h = (x - Math.pow(2, 24)) * 0.01;
+                        h = x < twoToThePowerOf23 ? 0.01 * x : 0.01 * (x - twoToThePowerOf24);
                     }
                 } else if (encoding === 'mapbox') {
-                    h = (r * 256 * 256 + g * 256 + b) / 10 - 10000;
+                    h = (r * 65536 + g * 256 + b) / 10 - 10000;
                 } else if (encoding === 'terrarium') {
                     h =  r * 256 + g + b / 256 - 32768;
                 }
@@ -107,9 +108,9 @@ function png2ReliefProtocol(
                 callback(null, await blob.arrayBuffer(), null, null);
             });
         };
-	    image.src = params.url.replace( protocol + '://https://', 'https://' );
+        image.src = params.url.replace(protocol + '://https://', 'https://');
         return { cancel: (_) => {} };
     };
 }
 
-export { png2ReliefProtocol };
+export { dem2ReliefProtocol };
