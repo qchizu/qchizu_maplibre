@@ -66,15 +66,15 @@ const demSources = {
     tileSize: 256,
   },
   "qchizuNotoE": {
-    tiles: ['https://mapdata.qchizu.xyz/94dem/ishikawa_01/{z}/{x}/{y}.png'],
-    encoding: "mapbox",
+    tiles: ['https://mapdata.qchizu.xyz/94dem/17p/ishikawa_f_01_g/{z}/{x}/{y}.png'],
+    encoding: "gsi",
     attribution: '<a href="https://info.qchizu.xyz" target="_blank">Ｑ地図タイル</a>(<a href="https://www.geospatial.jp/ckan/dataset/aac-disaster-20240101-dem" target="_blank">朝日航洋㈱</a>(<a href="https://www.geospatial.jp/ckan/dataset/2024-notoeast-pc" target="_blank">AIGID</a>(石川県測量成果))使用)',
     maxzoom: 17,
     tileSize: 256,
   },
   "qchizuNotoW": {
-    tiles: ['https://mapdata.qchizu.xyz/94dem/ishikawa_02/{z}/{x}/{y}.png'],
-    encoding: "mapbox",
+    tiles: ['https://mapdata.qchizu.xyz/94dem/17p/ishikawa_f_02_g/{z}/{x}/{y}.png'],
+    encoding: "gsi",
     attribution: '<a href="https://info.qchizu.xyz" target="_blank">Ｑ地図タイル</a>(<a href="https://www.geospatial.jp/ckan/dataset/2024-notowest-ground" target="_blank">AIGID</a>(石川県測量成果))を使用)',
     maxzoom: 17,
     tileSize: 256,
@@ -92,6 +92,8 @@ var contourInterval = {
   16: [5, 25],
   17: [1, 5],
   18: [1, 5],
+  19: [0.5, 2.5],
+  20: [0.1, 0.5],
 };
 
 let DemSourceSelector = document.getElementById("Dem_Source_Selector");
@@ -148,7 +150,6 @@ function updateMapLayers() {
 
   
   let xyOrder = demSources[selectedSource]["tiles"][0].includes('{x}/{y}') ? 'Xy' : 'Yx';
-  console.log(demSources[selectedSource]["tiles"]);
 
   let slopeTilesUrl;
   if (demSources[selectedSource]["encoding"] === "gsi") {
@@ -156,8 +157,6 @@ function updateMapLayers() {
   } else if (demSources[selectedSource]["encoding"] === "mapbox"){
     slopeTilesUrl = demSources[selectedSource].tiles.map(url => "slopeMapbox" + xyOrder + "://" + url);
   }
-
-  console.log(slopeTilesUrl);
 
   map.addSource(
     "slopeSource", {
@@ -251,7 +250,7 @@ function updateMapLayers() {
           contourLayer: "contours",
         }),
       ],
-      "maxzoom": 19, //この意味要検討
+      "maxzoom": 20,
     }
   );
 

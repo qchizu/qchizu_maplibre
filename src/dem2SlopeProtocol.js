@@ -25,27 +25,27 @@ function dem2SlopeProtocol(protocol = 'slope', encoding = 'gsi', xyOrder = 'xy')
         let tileImagesSrc
         if (xyOrder === 'xy') {
             tileImagesSrc = [
-                baseTemplate + (tileX-1) + '/' + (tileY-1) + '.png', // 左上
-                baseTemplate + tileX + '/' + (tileY-1) + '.png', // 上
-                baseTemplate + (tileX+1) + '/' + (tileY-1) + '.png', // 右上
-                baseTemplate + (tileX-1) + '/' + tileY + '.png', // 左
-                url, // 中央
-                baseTemplate + (tileX+1) + '/' + tileY + '.png', // 右
-                baseTemplate + (tileX-1) + '/' + (tileY+1) + '.png', // 左下
-                baseTemplate + tileX + '/' + (tileY+1) + '.png', // 下
-                baseTemplate + (tileX+1) + '/' + (tileY+1) + '.png'  // 右下
+                //{index: 0, src: baseTemplate + (tileX-1) + '/' + (tileY-1) + '.png'}, // 左上
+                //{index: 1, src: baseTemplate + tileX + '/' + (tileY-1) + '.png'}, // 上
+                //{index: 2, src: baseTemplate + (tileX+1) + '/' + (tileY-1) + '.png'}, // 右上
+                //{index: 3, src: baseTemplate + (tileX-1) + '/' + tileY + '.png'}, // 左
+                {index: 4, src: url}, // 中央
+                {index: 5, src: baseTemplate + (tileX+1) + '/' + tileY + '.png'}, // 右
+                //{index: 6, src: baseTemplate + (tileX-1) + '/' + (tileY+1) + '.png'}, // 左下
+                {index: 7, src: baseTemplate + tileX + '/' + (tileY+1) + '.png'}, // 下
+                {index: 8, src: baseTemplate + (tileX+1) + '/' + (tileY+1) + '.png'}  // 右下
             ];
         } else if (xyOrder === 'yx') {
             tileImagesSrc = [
-                baseTemplate + (tileY-1) + '/' + (tileX-1) + '.png', // 左上
-                baseTemplate + (tileY-1) + '/' + tileX + '.png', // 上
-                baseTemplate + (tileY-1) + '/' + (tileX+1) + '.png', // 右上
-                baseTemplate + tileY + '/' + (tileX-1) + '.png', // 左
-                url, // 中央
-                baseTemplate + tileY + '/' + (tileX+1) + '.png', // 右
-                baseTemplate + (tileY+1) + '/' + (tileX-1) + '.png', // 左下
-                baseTemplate + (tileY+1) + '/' + tileX + '.png', // 下
-                baseTemplate + (tileY+1) + '/' + (tileX+1) + '.png'  // 右下
+                //{index: 0, src: baseTemplate + (tileY-1) + '/' + (tileX-1) + '.png'}, // 左上
+                //{index: 1, src: baseTemplate + (tileY-1) + '/' + tileX + '.png'}, // 上
+                //{index: 2, src: baseTemplate + (tileY-1) + '/' + (tileX+1) + '.png'}, // 右上
+                //{index: 3, src: baseTemplate + tileY + '/' + (tileX-1) + '.png'}, // 左
+                {index: 4, src: url}, // 中央
+                {index: 5, src: baseTemplate + tileY + '/' + (tileX+1) + '.png'}, // 右
+                //{index: 6, src: baseTemplate + (tileY+1) + '/' + (tileX-1) + '.png'}, // 左下
+                {index: 7, src: baseTemplate + (tileY+1) + '/' + tileX + '.png'}, // 下
+                {index: 8, src: baseTemplate + (tileY+1) + '/' + (tileX+1) + '.png'}  // 右下
             ];
         }
 
@@ -62,7 +62,7 @@ function dem2SlopeProtocol(protocol = 'slope', encoding = 'gsi', xyOrder = 'xy')
         const mergedCtx = mergedCanvas.getContext('2d');
 
         let loadedImages = 0;
-        tileImagesSrc.forEach((src, index) => {
+        tileImagesSrc.forEach(({ src, index }) => {
             const img = new Image();
             img.crossOrigin = 'anonymous';
             img.onload = () => {
@@ -76,7 +76,7 @@ function dem2SlopeProtocol(protocol = 'slope', encoding = 'gsi', xyOrder = 'xy')
                 loadedImages++;
 
                 // すべての画像が読み込まれたか確認
-                if (loadedImages === 9) {
+                if (loadedImages === tileImagesSrc.length) {
                     // すべてのタイルが読み込まれたら処理を続行
                     processLoadedImages(tileSize, buffer, mergedCtx, calculateHeight, calculateSlope, pixelLength, callback);
                 }
@@ -85,7 +85,7 @@ function dem2SlopeProtocol(protocol = 'slope', encoding = 'gsi', xyOrder = 'xy')
                 // 画像の読み込みに失敗した場合もloadedImagesを増やす
                 loadedImages++;
                 // すべての画像が読み込まれたか確認
-                if (loadedImages === 9) {
+                if (loadedImages === tileImagesSrc.length) {
                     // すべてのタイルが読み込まれたら処理を続行
                     processLoadedImages(tileSize, buffer, mergedCtx, calculateHeight, calculateSlope, pixelLength, callback);
                 }
