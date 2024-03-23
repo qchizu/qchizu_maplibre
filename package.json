@@ -12,7 +12,8 @@
     "vite": "^5.0.0"
   },
   "dependencies": {
-    "maplibre-gl": "^3.6.2",
-    "maplibre-gl-opacity": "^1.6.0"
+    "maplibre-gl": "^4.0.2",
+    "maplibre-gl-opacity": "^1.6.0",
+    "pmtiles": "^3.0.4"
   }
 }

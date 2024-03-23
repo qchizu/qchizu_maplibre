@@ -1,101 +1,135 @@
-function dem2SlopeProtocol(protocol = 'slope', encoding = 'gsi', xyOrder = 'xy') {
+import { addProtocol } from 'maplibre-gl';
+
+function dem2SlopeProtocol(
+    protocol = 'slope', 
+    encoding = 'gsi', 
+    xyOrder = 'xy'
+) {
     // エンコーディングに応じて適切な標高計算関数を取得
     const calculateHeight = getCalculateHeightFunction(encoding);
 
-    return (params, callback) => {
+    const loadFn = async (params, abortController) => {
         // URLからズームレベル、タイルX、タイルYを抽出
-        const url = params.url.replace(protocol + '://https://', 'https://');
-        const regex = /\/(\d+)\/(\d+)\/(\d+)\.png$/;
-        const match = url.match(regex);
-        const zoomLevel = parseInt(match[1], 10);
-        let tileX, tileY;
-        if (xyOrder === 'xy') {
-            tileX = parseInt(match[2], 10);
-            tileY = parseInt(match[3], 10);
-        } else if (xyOrder === 'yx') {
-            tileX = parseInt(match[3], 10);
-            tileY = parseInt(match[2], 10);
-        }
+        const url = params.url.replace(`${protocol}://`, '');
+        const response = await fetch(url, { signal: abortController.signal });
+        console.log(url);
 
-        // 1ピクセルあたりの距離を計算
-        const pixelLength = calculatePixelLength(zoomLevel, tileY);
+        if (response.status === 200) {
+            const regex = /\/(\d+)\/(\d+)\/(\d+)\.png$/;
+            const match = url.match(regex);
+            const zoomLevel = parseInt(match[1], 10);
+            let tileX, tileY;
+            if (xyOrder === 'xy') {
+                tileX = parseInt(match[2], 10);
+                tileY = parseInt(match[3], 10);
+            } else if (xyOrder === 'yx') {
+                tileX = parseInt(match[3], 10);
+                tileY = parseInt(match[2], 10);
+            }
 
-        // 周辺を含む9つのタイル画像のソース
-        const baseTemplate = url.substring(0, url.lastIndexOf(`/${zoomLevel}/`) + 1) + `${zoomLevel}/`;
-        let tileImagesSrc
-        if (xyOrder === 'xy') {
-            tileImagesSrc = [
-                //{index: 0, src: baseTemplate + (tileX-1) + '/' + (tileY-1) + '.png'}, // 左上
-                //{index: 1, src: baseTemplate + tileX + '/' + (tileY-1) + '.png'}, // 上
-                //{index: 2, src: baseTemplate + (tileX+1) + '/' + (tileY-1) + '.png'}, // 右上
-                //{index: 3, src: baseTemplate + (tileX-1) + '/' + tileY + '.png'}, // 左
-                {index: 4, src: url}, // 中央
-                {index: 5, src: baseTemplate + (tileX+1) + '/' + tileY + '.png'}, // 右
-                //{index: 6, src: baseTemplate + (tileX-1) + '/' + (tileY+1) + '.png'}, // 左下
-                {index: 7, src: baseTemplate + tileX + '/' + (tileY+1) + '.png'}, // 下
-                {index: 8, src: baseTemplate + (tileX+1) + '/' + (tileY+1) + '.png'}  // 右下
-            ];
-        } else if (xyOrder === 'yx') {
-            tileImagesSrc = [
-                //{index: 0, src: baseTemplate + (tileY-1) + '/' + (tileX-1) + '.png'}, // 左上
-                //{index: 1, src: baseTemplate + (tileY-1) + '/' + tileX + '.png'}, // 上
-                //{index: 2, src: baseTemplate + (tileY-1) + '/' + (tileX+1) + '.png'}, // 右上
-                //{index: 3, src: baseTemplate + tileY + '/' + (tileX-1) + '.png'}, // 左
-                {index: 4, src: url}, // 中央
-                {index: 5, src: baseTemplate + tileY + '/' + (tileX+1) + '.png'}, // 右
-                //{index: 6, src: baseTemplate + (tileY+1) + '/' + (tileX-1) + '.png'}, // 左下
-                {index: 7, src: baseTemplate + (tileY+1) + '/' + tileX + '.png'}, // 下
-                {index: 8, src: baseTemplate + (tileY+1) + '/' + (tileX+1) + '.png'}  // 右下
-            ];
-        }
+            // 1ピクセルあたりの距離を計算
+            const pixelLength = calculatePixelLength(zoomLevel, tileY);
 
-        const tileSize = 256; // タイルのサイズ（ピクセル）
-        const buffer = 1; // 中央から読み込む範囲（ピクセル）
+            // 周辺を含む9つのタイル画像のソース
+            const baseTemplate = url.substring(0, url.lastIndexOf(`/${zoomLevel}/`) + 1) + `${zoomLevel}/`;
+            let tileImagesSrc = [];
+            if (xyOrder === 'xy') {
+                tileImagesSrc = [
+                    {index: 4, src: url}, // 中央
+                    {index: 5, src: baseTemplate + (tileX+1) + '/' + tileY + '.png'}, // 右
+                    {index: 7, src: baseTemplate + tileX + '/' + (tileY+1) + '.png'}, // 下
+                    {index: 8, src: baseTemplate + (tileX+1) + '/' + (tileY+1) + '.png'}  // 右下
+                ];
+            } else if (xyOrder === 'yx') {
+                tileImagesSrc = [
+                    {index: 4, src: url}, // 中央
+                    {index: 5, src: baseTemplate + tileY + '/' + (tileX+1) + '.png'}, // 右
+                    {index: 7, src: baseTemplate + (tileY+1) + '/' + tileX + '.png'}, // 下
+                    {index: 8, src: baseTemplate + (tileY+1) + '/' + (tileX+1) + '.png'}  // 右下
+                ];
+            }
 
-        // 結合後の画像サイズ
-        const mergedSize = tileSize + buffer * 2;
+            const tileSize = 256; // タイルのサイズ（ピクセル）
+            const buffer = 1; // 中央から読み込む範囲（ピクセル）
 
-        // 結合用のキャンバスを作成
-        const mergedCanvas = document.createElement('canvas');
-        mergedCanvas.width = mergedSize;
-        mergedCanvas.height = mergedSize;
-        const mergedCtx = mergedCanvas.getContext('2d');
+            // 結合用のキャンバスを作成
+            const mergedCanvas = new OffscreenCanvas(tileSize + buffer * 2, tileSize + buffer * 2);
+            const mergedCtx = mergedCanvas.getContext('2d');
 
-        let loadedImages = 0;
-        tileImagesSrc.forEach(({ src, index }) => {
-            const img = new Image();
-            img.crossOrigin = 'anonymous';
-            img.onload = () => {
-                // タイルの描画位置を計算
-                const { sx, sy, sWidth, sHeight, dx, dy } = calculateTilePosition(index, tileSize, buffer);
-                
-                // タイルをCanvasに描画
-                mergedCtx.drawImage(img, sx, sy, sWidth, sHeight, dx, dy, sWidth, sHeight);
+            // 出力用のキャンバスを作成
+            const blob = await response.blob();
+            const imageBitmap = await createImageBitmap(blob);
+            const outputCanvas = new OffscreenCanvas(imageBitmap.width, imageBitmap.height);
+            const outputCtx = outputCanvas.getContext('2d');
+            outputCtx.drawImage(imageBitmap, 0, 0);
+            
+            const outputImageData = outputCtx.getImageData(0, 0, outputCanvas.width, outputCanvas.height);
 
-                // 画像の読み込みが完了したらloadedImagesを増やす
-                loadedImages++;
+            outputCtx.putImageData(outputImageData, 0, 0);
 
-                // すべての画像が読み込まれたか確認
-                if (loadedImages === tileImagesSrc.length) {
-                    // すべてのタイルが読み込まれたら処理を続行
-                    processLoadedImages(tileSize, buffer, mergedCtx, calculateHeight, calculateSlope, pixelLength, callback);
+            // tileImagesSrcに含まれる画像を非同期で読み込む
+            const imagePromises = tileImagesSrc.map(async ({ index, src }) => {
+                const response = await fetch(src, { signal: abortController.signal });
+                if (response.status === 200) {
+                    const blob = await response.blob();
+                    return { img: await createImageBitmap(blob), index };
+                } else {
+                    return { img: null, index };
+                }
+            });
+
+            // すべてのタイルが読み込まれたら処理を続行
+            const images = await Promise.all(imagePromises);
+            images.forEach(({ img, index }) => {
+                if (img) {
+                    // タイルの描画位置を計算
+                    const { sx, sy, sWidth, sHeight, dx, dy } = calculateTilePosition(index, tileSize, buffer);
+                    // タイルをCanvasに描画
+                    mergedCtx.drawImage(img, sx, sy, sWidth, sHeight, dx, dy, sWidth, sHeight);
+                }
+            });
+
+            // 傾斜と色を計算
+            const mergedImageData = mergedCtx.getImageData(0, 0, tileSize + buffer * 2, tileSize + buffer * 2);
+            const mergedWidth = tileSize + buffer * 2;
+
+            for (let row = 0; row < tileSize; row++) {
+                for (let col = 0; col < tileSize; col++) {
+                    const mergedIndex = ((row + buffer) * mergedWidth + (col + buffer)) * 4;
+                    const outputIndex = (row * tileSize + col) * 4;
+                                                
+                    // RGB値を使用して高さを計算
+                    let H00 = calculateHeight(mergedImageData.data[mergedIndex], mergedImageData.data[mergedIndex + 1], mergedImageData.data[mergedIndex + 2]);
+                    let H01 = calculateHeight(mergedImageData.data[mergedIndex + 4], mergedImageData.data[mergedIndex + 5], mergedImageData.data[mergedIndex + 6]);
+                    let H10 = calculateHeight(mergedImageData.data[mergedIndex + mergedWidth * 4], mergedImageData.data[mergedIndex + mergedWidth * 4 + 1], mergedImageData.data[mergedIndex + mergedWidth * 4 + 2]);
+                    let slope = calculateSlope(H00, H01, H10, pixelLength);
+                    let alpha = Math.min(Math.max(slope * 3, 0), 255); // alpha値は0から255の範囲に収める
+
+                    outputImageData.data[outputIndex] = 0;
+                    outputImageData.data[outputIndex + 1] = 0;
+                    outputImageData.data[outputIndex + 2] = 0;
+                    outputImageData.data[outputIndex + 3] = alpha;
                 }
             };
-            img.onerror = () => {
-                // 画像の読み込みに失敗した場合もloadedImagesを増やす
-                loadedImages++;
-                // すべての画像が読み込まれたか確認
-                if (loadedImages === tileImagesSrc.length) {
-                    // すべてのタイルが読み込まれたら処理を続行
-                    processLoadedImages(tileSize, buffer, mergedCtx, calculateHeight, calculateSlope, pixelLength, callback);
-                }
-            };
-            img.src = src;
-        });
 
-        return { cancel: (_) => {} };
+            outputCtx.putImageData(outputImageData, 0, 0);
+
+            return outputCanvas.convertToBlob().then(async (blob) => {
+                return { data: await blob.arrayBuffer() };
+            });
+
+        
+        } else {
+            // Log an error or handle it appropriately
+            return { data: null }; // return null or other appropriate value
+        }
     };
-};
+
+    // Add the protocol
+    addProtocol(protocol, loadFn);
+}
+
+export { dem2SlopeProtocol };
 
 // タイルの位置を計算する関数
 function calculateTilePosition(index, tileSize, buffer) {
@@ -116,43 +150,6 @@ function calculateTilePosition(index, tileSize, buffer) {
 
         return { sx, sy, sWidth, sHeight, dx, dy };
     }
-}
-
-// タイル画像の処理が完了した後の処理
-function processLoadedImages(tileSize, buffer, mergedCtx, calculateHeight, calculateSlope, pixelLength, callback) {
-    const mergedImageData = mergedCtx.getImageData(0, 0, tileSize + buffer * 2, tileSize + buffer * 2);
-    const outputCanvas = document.createElement('canvas');
-    const outputCtx = outputCanvas.getContext('2d');
-    outputCanvas.width = tileSize;
-    outputCanvas.height = tileSize;
-    const outputImageData = outputCtx.createImageData(tileSize, tileSize);
-
-    // 傾斜と色を計算
-    for (let row = 0; row < tileSize; row++) {
-        for (let col = 0; col < tileSize; col++) {
-            const mergedWidth = tileSize + buffer * 2;
-            const mergedIndex = ((row + buffer) * mergedWidth + (col + buffer)) * 4;
-            const outputIndex = (row * tileSize + col) * 4;
-                                        
-            // RGB値を使用して高さを計算
-            let H00 = calculateHeight(mergedImageData.data[mergedIndex], mergedImageData.data[mergedIndex + 1], mergedImageData.data[mergedIndex + 2]);
-            let H01 = calculateHeight(mergedImageData.data[mergedIndex + 4], mergedImageData.data[mergedIndex + 5], mergedImageData.data[mergedIndex + 6]);
-            let H10 = calculateHeight(mergedImageData.data[mergedIndex + mergedWidth * 4], mergedImageData.data[mergedIndex + mergedWidth * 4 + 1], mergedImageData.data[mergedIndex + mergedWidth * 4 + 2]);
-            let slope = calculateSlope(H00, H01, H10, pixelLength);
-            let alpha = Math.min(Math.max(slope * 3, 0), 255); // alpha値は0から255の範囲に収める
-
-            outputImageData.data[outputIndex] = 0;
-            outputImageData.data[outputIndex + 1] = 0;
-            outputImageData.data[outputIndex + 2] = 0;
-            outputImageData.data[outputIndex + 3] = alpha;
-        }
-    }
-
-    outputCtx.putImageData(outputImageData, 0, 0);
-    outputCanvas.toBlob(async (blob) => {
-        const arrayBuffer = await blob.arrayBuffer();
-        callback(null, arrayBuffer, null, null);
-    });
 }
 
 // エンコーディングに応じた標高計算関数を返す関数
@@ -217,4 +214,3 @@ function calculateSlope(H00, H01, H10, pixelLength) {
     return slope;
 }
 
-export { dem2SlopeProtocol };

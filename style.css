@@ -39,6 +39,9 @@ body {
       font-size: 15px;
   }
   #Dem_Source_Selector {
-    width: 80px;
+    width: 80px; /* 既存の設定 */
+  }
+  #map {
+    height: calc(100vh - 25px); /* #title の高さを25pxに合わせて調整 */
   }
 }

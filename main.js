@@ -5,22 +5,38 @@ import "maplibre-gl-opacity/dist/maplibre-gl-opacity.css";
 import { demTranscoderProtocol } from "./src/demTranscoderProtocol.js";
 import { dem2ReliefProtocol } from "./src/dem2ReliefProtocol.js";
 import { dem2SlopeProtocol } from "./src/dem2SlopeProtocol.js";
+import { Protocol } from "pmtiles";
 
 // addProtocolを設定
-MapLibreGL.addProtocol('gsi', demTranscoderProtocol("gsi", "gsi"));
-MapLibreGL.addProtocol('reliefGsi', dem2ReliefProtocol('reliefGsi',"gsi",true));
-MapLibreGL.addProtocol('reliefMapbox', dem2ReliefProtocol('reliefMapbox',"mapbox",true));
-MapLibreGL.addProtocol('slopeGsiXy', dem2SlopeProtocol("slopeGsiXy", "gsi" ,"xy"));
-MapLibreGL.addProtocol('slopeGsiYx', dem2SlopeProtocol("slopeGsiYx", "gsi" ,"yx"));
-MapLibreGL.addProtocol('slopeMapboxXy', dem2SlopeProtocol("slopeMapboxXy", "mapbox","xy"));
+demTranscoderProtocol("gsi", "gsi");
+dem2ReliefProtocol('reliefGsi', "gsi", true);
+dem2ReliefProtocol('reliefMapbox',"mapbox",true);
+dem2SlopeProtocol("slopeGsiXy", "gsi" ,"xy");
+dem2SlopeProtocol("slopeGsiYx", "gsi" ,"yx");
+dem2SlopeProtocol("slopeMapboxXy", "mapbox","xy");
+MapLibreGL.addProtocol("pmtiles",new Protocol().tile);
 
 //png標高タイルの設定（index.htmlのリストも修正のこと）
 const demSources = {
+  "gsjMixed": {
+    tiles: ['https://tiles.gsj.jp/tiles/elev/land/{z}/{y}/{x}.png'],
+    encoding: "gsi",
+    attribution: '<a href="https://gbank.gsj.jp/seamless/elev/" target="_blank">産総研地質調査総合センター</a>',
+    maxzoom: 17,
+    tileSize: 256,
+  },
   "gsi10B": {
     tiles: ['https://cyberjapandata.gsi.go.jp/xyz/dem_png/{z}/{x}/{y}.png'],
     encoding: "gsi",
     attribution: '<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank">地理院タイル</a>',
     maxzoom: 14,
+    tileSize: 256,
+  },
+"qchizu5A": {
+    tiles: ['https://mapdata.qchizu.xyz/94dem/99gsi/5A/01_g/{z}/{x}/{y}.png'],
+    encoding: "gsi",
+    attribution: 'Q地図タイル(測量法に基づく国土地理院長承認(使用)R5JHs727)',
+    maxzoom: 15,
     tileSize: 256,
   },
   "gsi5A": {
@@ -48,13 +64,6 @@ const demSources = {
     tiles: ['https://mapdata.qchizu.xyz/94dem/99gsi/1A/01_g/{z}/{x}/{y}.png'],
     encoding: "gsi",
     attribution: 'Q地図タイル(測量法に基づく国土地理院長承認(使用)R5JHs727)',
-    maxzoom: 17,
-    tileSize: 256,
-  },
-  "gsjMixed": {
-    tiles: ['https://tiles.gsj.jp/tiles/elev/land/{z}/{y}/{x}.png'],
-    encoding: "gsi",
-    attribution: '<a href="https://gbank.gsj.jp/seamless/elev/" target="_blank">産総研地質調査総合センター</a>',
     maxzoom: 17,
     tileSize: 256,
   },
@@ -93,7 +102,6 @@ var contourInterval = {
   17: [1, 5],
   18: [1, 5],
   19: [0.5, 2.5],
-  20: [0.1, 0.5],
 };
 
 let DemSourceSelector = document.getElementById("Dem_Source_Selector");
@@ -147,7 +155,6 @@ function updateMapLayers() {
   if (map.getSource("slopeSource")) {
     map.removeSource("slopeSource");
   }
-
   
   let xyOrder = demSources[selectedSource]["tiles"][0].includes('{x}/{y}') ? 'Xy' : 'Yx';
 
@@ -213,7 +220,7 @@ function updateMapLayers() {
     paint: {
       "hillshade-illumination-anchor": "map",
       "hillshade-exaggeration": 0.4,
-      "hillshade-highlight-color": "rgb(0,0,0)",
+      "hillshade-highlight-color": "rgb(255,255,255)",
     },
     layout: {
       visibility: hillshadeCheckbox.checked ? "visible" : "none"
@@ -250,7 +257,7 @@ function updateMapLayers() {
           contourLayer: "contours",
         }),
       ],
-      "maxzoom": 20,
+      "maxzoom": 19,
     }
   );
 
@@ -351,6 +358,7 @@ const map = new MapLibreGL.Map({
   pitch: 0, //初期表示の傾斜角度
   maxPitch: 85, //maxPitch must be less than or equal to 85
   hash: true,
+  attributionControl: true,
   style: {
     version: 8,
     glyphs: "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
@@ -510,13 +518,13 @@ const map = new MapLibreGL.Map({
   },
 });
 
-  // ズーム・回転
-  map.addControl(
-    new MapLibreGL.NavigationControl({
-        visualizePitch: true,
-        showZoom: true,
-        showCompass: true
-    })
+// ズーム・回転
+map.addControl(
+  new MapLibreGL.NavigationControl({
+      visualizePitch: true,
+      showZoom: true,
+      showCompass: true
+  })
 );
 
 // フルスクリーンモードのオンオフ

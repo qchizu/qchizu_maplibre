@@ -1,3 +1,5 @@
+import { addProtocol } from 'maplibre-gl';
+
 function dem2ReliefProtocol(
     protocol = 'relief',  
     encoding = 'gsi', // 'gsi', 'gsj', 'mapbox', 'terrarium'
@@ -22,19 +24,19 @@ function dem2ReliefProtocol(
         { limit: Infinity, color: [255, 255, 255] }
     ]
 ) {
-    return (params, callback) => {
-        const image = new Image();
-        image.crossOrigin = 'anonymous';
-        image.onload = function () {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
+    const loadFn = async (params, abortController) => {
+        const imageUrl = params.url.replace(`${protocol}://`, '');
+        const response = await fetch(imageUrl, { signal: abortController.signal });
 
-            const width = image.width;
-            const height = image.height;
-            canvas.width = width;
-            canvas.height = height;
-            ctx.drawImage(image, 0, 0);
-            const imageData = ctx.getImageData(0, 0, width, height);
+        if (response.status === 200) {
+            const blob = await response.blob();
+            const imageBitmap = await createImageBitmap(blob);
+
+            const canvas = new OffscreenCanvas(imageBitmap.width, imageBitmap.height);
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(imageBitmap, 0, 0);
+
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
             // 定数の事前計算
             const twoToThePowerOf23 = 2 ** 23;
@@ -104,13 +106,28 @@ function dem2ReliefProtocol(
             }
 
             ctx.putImageData(imageData, 0, 0);
-            canvas.toBlob(async (blob) => {
-                callback(null, await blob.arrayBuffer(), null, null);
+
+            return canvas.convertToBlob().then(async (blob) => {
+                // console.log(blob); // コンソールにblob情報を出力
+
+                // Blobから画像のURLを生成
+                // const imageUrl = URL.createObjectURL(blob);
+            
+                // 画像URLをブラウザのコンソールに出力
+                // console.log(imageUrl);
+            
+                // (オプション) 新しいタブで画像を開く
+                // window.open(imageUrl);
+                
+                return { data: await blob.arrayBuffer() };
             });
-        };
-        image.src = params.url.replace(protocol + '://https://', 'https://');
-        return { cancel: (_) => {} };
+        } else {
+            return { data: null }; // return null or other appropriate value
+        }
     };
+
+    // プロトコルを追加
+    addProtocol(protocol, loadFn);
 }
 
 export { dem2ReliefProtocol };

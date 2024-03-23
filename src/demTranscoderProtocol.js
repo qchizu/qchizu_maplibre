@@ -1,18 +1,21 @@
 // numPngProtocol.js, 2023-11-27　西岡 芳晴 ( NISHIOKA Yoshiharu )を一部修正
-function demTranscoderProtocol(protocol = 'gsi', encoding = 'gsi') {
-        // 定数の事前計算
-        const twoToThePowerOf23 = 2 ** 23;
-        const twoToThePowerOf24 = 2 ** 24;
-    return (params, callback) => {
-        const image = new Image();
-        image.crossOrigin = 'anonymous';
-        image.onload = () => {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
 
-            canvas.width = image.width;
-            canvas.height = image.height;
-            ctx.drawImage(image, 0, 0);
+import { addProtocol } from 'maplibre-gl';
+function demTranscoderProtocol(protocol = 'gsi', encoding = 'gsi') {
+    const twoToThePowerOf23 = 2 ** 23;
+    const twoToThePowerOf24 = 2 ** 24;
+
+    const loadFn = async (params, abortController) => {
+        const imageUrl = params.url.replace(`${protocol}://`, '');
+        const response = await fetch(imageUrl, { signal: abortController.signal });
+
+        if (response.status === 200) {
+            const blob = await response.blob();
+            const imageBitmap = await createImageBitmap(blob);
+
+            const canvas = new OffscreenCanvas(imageBitmap.width, imageBitmap.height);
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(imageBitmap, 0, 0);
             const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
             const data = imageData.data;
 
@@ -35,17 +38,22 @@ function demTranscoderProtocol(protocol = 'gsi', encoding = 'gsi') {
                 data[i] = n2 >> 16 & 0xff;
                 data[i + 1] = n2 >> 8 & 0xff;
                 data[i + 2] = n2 & 0xff;
-                data[i + 3] = 255; //alphaが0だとterrainが正しく表示されない
+                data[i + 3] = 255;  //alphaが0だとterrainが正しく表示されない
             }
 
             ctx.putImageData(imageData, 0, 0);
-            canvas.toBlob(async (blob) => {
-                callback(null, await blob.arrayBuffer(), null, null);
+
+            return canvas.convertToBlob().then(async (blob) => {
+                return { data: await blob.arrayBuffer() };
             });
-        };
-        image.src = params.url.replace(protocol + '://https://', 'https://');
-        return { cancel: _ => {} };
-    }
-};
+        } else {
+            // Log an error or handle it appropriately
+            return { data: null }; // return null or other appropriate value
+        }
+    };
+
+    // Add the protocol
+    addProtocol(protocol, loadFn);
+}
 
 export { demTranscoderProtocol };
