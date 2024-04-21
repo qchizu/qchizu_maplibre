@@ -57,7 +57,7 @@
     map = new maplibregl.Map({
       container: mapContainer,
       zoom: 5,
-      center: [38.5, 137],
+      center: [137,38.5],
       pitch: 0, //初期表示の傾斜角度
       maxPitch: 85, //maxPitch must be less than or equal to 85
       hash: true,
