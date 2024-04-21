@@ -1,0 +1,18 @@
+SvelteとMapLibre GL JSプロジェクトセットアップ手順:
+
+1. ディレクトリに移動:
+cd ～～～
+
+2. ViteとSvelteのプロジェクト作成:
+npm create vite@latest . -- --template svelte
+
+3. 依存関係のインストール:
+npm install
+
+4. MapLibre GL JSなどのインストール:
+npm install maplibre-gl
+npm install maplibre-gl-opacity
+npm install pmtiles
+
+5. 開発サーバーの起動:
+npm run dev

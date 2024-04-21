@@ -4,37 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="robots" content="noindex">
     <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0"/>
-    <title>全国Ｑ地図MapLibre版｜各種地形図・地図情報の統合閲覧サイト</title>
-    <link rel="stylesheet" href="style.css">
+    <title>全国Ｑ地図MapLibre版</title>
   </head>
   <body>
-    <div id="title">
-      <span class="title-link">
-        <a href="./#4/36.1/140.08/0/0">全国Ｑ地図MapLibre版</a>
-      </span>
-      <span class="link-item">
-        <a href="https://info.qchizu.xyz/qchizu/maplibre_terrain/" target="_blank">About</a>
-      </span>
-      <span class="link-item" id="Standard_Edition_Link">
-        <a href="https://maps.qchizu.xyz" target="_blank">通常版</a>
-      </span>
-      <span class="link-item">
-        <select id="Dem_Source_Selector">
-          <option value="gsjMixed">産総研統合</option>
-          <option value="gsi10B">地理院10B(地形図)</option>
-          <option value="qchizu5A">Q地図5A(航空レーザ)</option>
-          <option value="gsi5A">地理院5A(航空レーザ)</option>
-          <option value="gsi5B">地理院5B(20cm写真)</option>
-          <option value="gsi5C">地理院5C(40cm写真)</option>
-          <option value="qchizu1A">Q地図1A(航空レーザ)</option>
-          <option value="qchizuNotoE">能登東部(2022)</option>
-          <option value="qchizuNotoW">能登西部(2020)</option>
-          <option value="gsiNotoDsm">能登DSM(地震後)</option>
-        </select>
-      </span>
-    </div>
-    <div id="map"></div>
-    <script src="./src/maplibre-contour.js"></script> <!-- 一部改変して利用 -->
-    <script type="module" src="/main.js"></script>
-  </body>  
+    <div id="app"></div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
 </html>

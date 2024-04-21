@@ -108,17 +108,6 @@ function dem2ReliefProtocol(
             ctx.putImageData(imageData, 0, 0);
 
             return canvas.convertToBlob().then(async (blob) => {
-                // console.log(blob); // コンソールにblob情報を出力
-
-                // Blobから画像のURLを生成
-                // const imageUrl = URL.createObjectURL(blob);
-            
-                // 画像URLをブラウザのコンソールに出力
-                // console.log(imageUrl);
-            
-                // (オプション) 新しいタブで画像を開く
-                // window.open(imageUrl);
-                
                 return { data: await blob.arrayBuffer() };
             });
         } else {

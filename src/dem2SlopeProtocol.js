@@ -12,7 +12,6 @@ function dem2SlopeProtocol(
         // URLからズームレベル、タイルX、タイルYを抽出
         const url = params.url.replace(`${protocol}://`, '');
         const response = await fetch(url, { signal: abortController.signal });
-        console.log(url);
 
         if (response.status === 200) {
             const regex = /\/(\d+)\/(\d+)\/(\d+)\.png$/;

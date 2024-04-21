@@ -1,5 +1,5 @@
 {
-  "name": "qchizu-maplibre",
+  "name": "qchizu_maplibre_svelte",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -9,11 +9,13 @@
     "preview": "vite preview"
   },
   "devDependencies": {
-    "vite": "^5.0.0"
+    "@sveltejs/vite-plugin-svelte": "^3.0.2",
+    "svelte": "^4.2.12",
+    "vite": "^5.2.0"
   },
   "dependencies": {
-    "maplibre-gl": "^4.0.2",
-    "maplibre-gl-opacity": "^1.6.0",
-    "pmtiles": "^3.0.4"
+    "maplibre-contour": "git+https://github.com/qchizu/maplibre-contour.git",
+    "maplibre-gl": "^4.1.2",
+    "pmtiles": "^3.0.5"
   }
 }
