@@ -2,7 +2,7 @@ import { addProtocol } from 'maplibre-gl';
 
 function dem2ReliefProtocol(
     protocol = 'relief',  
-    encoding = 'gsi', // 'gsi', 'gsj', 'mapbox', 'terrarium'
+    encoding = 'gsj', // 'gsi', 'gsj', 'mapbox', 'terrarium'
     gradation = true, //  true, false
     colorMap = [
         { limit: -99999, color: [255, 255, 255]}, // 無効値の色
@@ -45,7 +45,7 @@ function dem2ReliefProtocol(
             //encodingに応じて標高を計算する関数
             function calculateHeight(encoding, r, g, b) {
                 let h;
-                if (encoding === 'gsi' || encoding === 'gsj') {
+                if (encoding === 'gsj' || encoding === 'gsi') {
                     const x = r * 65536 + g * 256 + b;
                     if (x === twoToThePowerOf23) {
                         h = -99999;

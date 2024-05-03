@@ -2,22 +2,27 @@
   import { onMount } from 'svelte';
   import maplibregl from "maplibre-gl";
   import "maplibre-gl/dist/maplibre-gl.css";
-  import { Protocol } from "pmtiles";
+  //import { Protocol } from "pmtiles";
 
+  //Components
   import Sidebar from './Sidebar.svelte'; //サイドバーのコンポーネント
-  import { mapViewParameters } from './MapViewParameters.js'; //リンク用の情報（緯度・経度など）
-  import { mapSources } from './MapSources'; //ソース定義
-  import { mapLayers } from './MapLayers'; //レイヤー定義
-  import { selectedBaseLayer } from './SelectedBaseLayer.js'; //選択中のベースマップレイヤー
-  import { selectedOverLayers } from './SelectedOverLayers'; //選択中のオーバーレイレイヤー
-  import { demSources } from './DemSources.js'; //標高タイル定義
-  import { selectedDemSource } from './SelectedDemSource.js'; //選択中の標高タイル
-  import { pitch } from './Pitch.js'; //傾斜角度
 
-  import { demTranscoderProtocol } from "./demTranscoderProtocol.js";
-  import { dem2ReliefProtocol } from "./dem2ReliefProtocol.js";
-  import { dem2SlopeProtocol } from "./dem2SlopeProtocol.js";
+  //Stores
+  import { mapViewParameters } from './stores/MapViewParameters.js'; //リンク用の情報（緯度・経度など）
+  import { mapSources } from './stores/MapSources'; //ソース定義
+  import { mapLayers } from './stores/MapLayers'; //レイヤー定義
+  import { selectedBaseLayer } from './stores/SelectedBaseLayer.js'; //選択中のベースマップレイヤー
+  import { selectedOverLayers } from './stores/SelectedOverLayers'; //選択中のオーバーレイレイヤー
+  import { demSources } from './stores/DemSources.js'; //標高タイル定義
+  import { selectedDemSource } from './stores/SelectedDemSource.js'; //選択中の標高タイル
+  import { pitch } from './stores/Pitch.js'; //傾斜角度
 
+  //Protocols
+  import { demTranscoderProtocol } from "./protocols/demTranscoderProtocol.js";
+  import { dem2ReliefProtocol } from "./protocols/dem2ReliefProtocol.js";
+  import { dem2SlopeProtocol } from "./protocols/dem2SlopeProtocol.js";
+
+  //Functions
   import { updateBaseLayerVisibility, updateOverLayerVisibility, updateTerrainLayers } from './utils.js';
 
   //定数の定義
@@ -43,13 +48,13 @@
   let firstMove = true;
 
   // addProtocolを設定
-  demTranscoderProtocol("gsi", "gsi");
-  dem2ReliefProtocol('reliefGsi', "gsi", true);
+  demTranscoderProtocol("gsj", "gsj");
+  dem2ReliefProtocol('reliefGsj', "gsj", true);
   dem2ReliefProtocol('reliefMapbox',"mapbox",true);
-  dem2SlopeProtocol("slopeGsiXy", "gsi" ,"xy");
-  dem2SlopeProtocol("slopeGsiYx", "gsi" ,"yx");
+  dem2SlopeProtocol("slopeGsjXy", "gsj" ,"xy");
+  dem2SlopeProtocol("slopeGsjYx", "gsj" ,"yx");
   dem2SlopeProtocol("slopeMapboxXy", "mapbox","xy");
-  maplibregl.addProtocol("pmtiles",new Protocol().tile);
+  //maplibregl.addProtocol("pmtiles",new Protocol().tile);
 
 
   // 地図の初期化処理
@@ -81,6 +86,7 @@
     
     updateTerrainLayers(map, $selectedDemSource, $demSources, contourInterval, maplibregl);
     updateBaseLayerVisibility(map, $selectedBaseLayer);
+    updateMapViewParameters();
 
     initialLoadComplete = true;
   }

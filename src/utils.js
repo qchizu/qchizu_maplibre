@@ -229,19 +229,19 @@ function getTilesUrl(selectedDemSource, demSources, layerType) {
   const encoding = demSources[selectedDemSource]["encoding"];
   const tilesUrlMap = {
     "relief": {
-      "gsi": url => "reliefGsi://" + url,
+      "gsj": url => "reliefGsj://" + url,
       "mapbox": url => "reliefMapbox://" + url
     },
     "slope": {
-      "gsi": url => "slopeGsi" + (demSources[selectedDemSource]["tiles"][0].includes('{x}/{y}') ? 'Xy' : 'Yx') + "://" + url,
+      "gsj": url => "slopeGsj" + (demSources[selectedDemSource]["tiles"][0].includes('{x}/{y}') ? 'Xy' : 'Yx') + "://" + url,
       "mapbox": url => "slopeMapbox" + (demSources[selectedDemSource]["tiles"][0].includes('{x}/{y}') ? 'Xy' : 'Yx') + "://" + url
     },
     "hillshade": {
-      "gsi": url => "gsi://" + url,
+      "gsj": url => "gsj://" + url,
       "mapbox": url => url
     },
     "terrain": {
-      "gsi": url => "gsi://" + url,
+      "gsj": url => "gsj://" + url,
       "mapbox": url => url
     }
   };

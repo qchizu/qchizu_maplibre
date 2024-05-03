@@ -1,9 +1,10 @@
 <script>
-    import { demSources } from './DemSources.js';
-    import { selectedBaseLayer } from './SelectedBaseLayer.js';
-    import { selectedOverLayers } from './SelectedOverLayers';
-    import { selectedDemSource } from './SelectedDemSource.js';
-    import { pitch } from './Pitch.js';
+    import Button from './Button.svelte';
+    import { demSources } from './stores/DemSources.js';
+    import { selectedBaseLayer } from './stores/SelectedBaseLayer.js';
+    import { selectedOverLayers } from './stores/SelectedOverLayers';
+    import { selectedDemSource } from './stores/SelectedDemSource.js';
+    import { pitch } from './stores/Pitch.js';
 
     const baseLayers = [
         { id: 'gsi_std', label: '標準地図' },
@@ -55,7 +56,7 @@
     
 <div class={sidebarVisible ? 'sidebar' : 'sidebar sidebar-hidden'}>
     <div class="close-sidebar-button">
-        <button on:click={toggleSidebar}>閉じる⇐</button>
+        <Button text="閉じる⇐" title="サイドバーを閉じます" onClick={toggleSidebar} />
     </div>
 
     <!-- 配列をもとにDEMソースのプルダウンリストを作成 -->
@@ -67,7 +68,7 @@
             {/each}
         </select>
         <div class="note">
-            ◆印の描画に反映されます
+            ◆印の描画に反映
         </div>
     </fieldset>
 
@@ -120,7 +121,7 @@
                 ※右上の方位マークのドラッグでも変更可
             </div>
             <div class="note">
-                ※右上の山マーククリックで地形を◆立体表示
+                ※右上の山マーククリックで地形を立体表示◆
             </div>
     </fieldset>
 

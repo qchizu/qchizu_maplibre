@@ -2,7 +2,7 @@ import { addProtocol } from 'maplibre-gl';
 
 function dem2SlopeProtocol(
     protocol = 'slope', 
-    encoding = 'gsi', 
+    encoding = 'gsj', 
     xyOrder = 'xy'
 ) {
     // エンコーディングに応じて適切な標高計算関数を取得
@@ -30,22 +30,35 @@ function dem2SlopeProtocol(
             const pixelLength = calculatePixelLength(zoomLevel, tileY);
 
             // 周辺を含む9つのタイル画像のソース
+            // index: 0 1 2
+            //        3 4 5
+            //        6 7 8
             const baseTemplate = url.substring(0, url.lastIndexOf(`/${zoomLevel}/`) + 1) + `${zoomLevel}/`;
             let tileImagesSrc = [];
             if (xyOrder === 'xy') {
-                tileImagesSrc = [
-                    {index: 4, src: url}, // 中央
-                    {index: 5, src: baseTemplate + (tileX+1) + '/' + tileY + '.png'}, // 右
-                    {index: 7, src: baseTemplate + tileX + '/' + (tileY+1) + '.png'}, // 下
-                    {index: 8, src: baseTemplate + (tileX+1) + '/' + (tileY+1) + '.png'}  // 右下
-                ];
+            tileImagesSrc = [
+                //{index: 0, src: baseTemplate + (tileX-1) + '/' + (tileY-1) + '.png'}, // 左上
+                //{index: 1, src: baseTemplate + tileX + '/' + (tileY-1) + '.png'}, // 上
+                //{index: 2, src: baseTemplate + (tileX+1) + '/' + (tileY-1) + '.png'}, // 右上
+                //{index: 3, src: baseTemplate + (tileX-1) + '/' + tileY + '.png'}, // 左
+                {index: 4, src: url}, // 中央
+                {index: 5, src: baseTemplate + (tileX+1) + '/' + tileY + '.png'}, // 右
+                //{index: 6, src: baseTemplate + (tileX-1) + '/' + (tileY+1) + '.png'}, // 左下
+                {index: 7, src: baseTemplate + tileX + '/' + (tileY+1) + '.png'}, // 下
+                {index: 8, src: baseTemplate + (tileX+1) + '/' + (tileY+1) + '.png'} // 右下
+            ];
             } else if (xyOrder === 'yx') {
-                tileImagesSrc = [
-                    {index: 4, src: url}, // 中央
-                    {index: 5, src: baseTemplate + tileY + '/' + (tileX+1) + '.png'}, // 右
-                    {index: 7, src: baseTemplate + (tileY+1) + '/' + tileX + '.png'}, // 下
-                    {index: 8, src: baseTemplate + (tileY+1) + '/' + (tileX+1) + '.png'}  // 右下
-                ];
+            tileImagesSrc = [
+                //{index: 0, src: baseTemplate + (tileY-1) + '/' + (tileX-1) + '.png'}, // 左上
+                //{index: 1, src: baseTemplate + (tileY-1) + '/' + tileX + '.png'}, // 上
+                //{index: 2, src: baseTemplate + (tileY-1) + '/' + (tileX+1) + '.png'}, // 右上
+                //{index: 3, src: baseTemplate + tileY + '/' + (tileX-1) + '.png'}, // 左
+                {index: 4, src: url}, // 中央
+                {index: 5, src: baseTemplate + tileY + '/' + (tileX+1) + '.png'}, // 右
+                //{index: 6, src: baseTemplate + (tileY+1) + '/' + (tileX-1) + '.png'}, // 左下
+                {index: 7, src: baseTemplate + (tileY+1) + '/' + tileX + '.png'}, // 下
+                {index: 8, src: baseTemplate + (tileY+1) + '/' + (tileX+1) + '.png'} // 右下
+            ];
             }
 
             const tileSize = 256; // タイルのサイズ（ピクセル）
@@ -68,11 +81,15 @@ function dem2SlopeProtocol(
 
             // tileImagesSrcに含まれる画像を非同期で読み込む
             const imagePromises = tileImagesSrc.map(async ({ index, src }) => {
-                const response = await fetch(src, { signal: abortController.signal });
-                if (response.status === 200) {
-                    const blob = await response.blob();
-                    return { img: await createImageBitmap(blob), index };
-                } else {
+                try {
+                    const response = await fetch(src, { signal: abortController.signal });
+                    if (response.status === 200) {
+                        const blob = await response.blob();
+                        return { img: await createImageBitmap(blob), index };
+                    } else {
+                        return { img: null, index };
+                    }
+                } catch (error) {
                     return { img: null, index };
                 }
             });
@@ -154,8 +171,8 @@ function calculateTilePosition(index, tileSize, buffer) {
 // エンコーディングに応じた標高計算関数を返す関数
 function getCalculateHeightFunction(encoding) {
     switch (encoding) {
-        case 'gsj':
         case 'gsi':
+        case 'gsj':
             return (r, g, b) => {
                 const x = r * 65536 + g * 256 + b;
                 const twoToThePowerOf23 = 8388608; // 2 ** 23
@@ -212,4 +229,3 @@ function calculateSlope(H00, H01, H10, pixelLength) {
     let slope = Math.atan(Math.sqrt(dx * dx + dy * dy) / pixelLength) * (180 / Math.PI);
     return slope;
 }
-

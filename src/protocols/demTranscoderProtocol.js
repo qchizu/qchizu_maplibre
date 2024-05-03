@@ -1,7 +1,7 @@
 // numPngProtocol.js, 2023-11-27　西岡 芳晴 ( NISHIOKA Yoshiharu )を一部修正
 
 import { addProtocol } from 'maplibre-gl';
-function demTranscoderProtocol(protocol = 'gsi', encoding = 'gsi') {
+function demTranscoderProtocol(protocol = 'gsj', encoding = 'gsj') {
     const twoToThePowerOf23 = 2 ** 23;
     const twoToThePowerOf24 = 2 ** 24;
 
