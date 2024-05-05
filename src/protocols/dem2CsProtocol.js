@@ -1,6 +1,6 @@
 import { addProtocol } from 'maplibre-gl';
 
-// ガウシアン関数によるウェイトファイル　修正してください
+// ガウシアン関数によるウェイトファイル
 const weightFile = [
     [0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000],
     [0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000],
@@ -28,6 +28,12 @@ const weightFile = [
     [0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000],
     [0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000]
 ];
+
+// weightFileの行数・列数
+const weightFileRowsCols = weightFile.length;
+const radius = Math.floor(weightFileRowsCols / 2); // ウェイトファイルの「半径」
+const buffer = Math.floor(weightFileRowsCols / 2 ) + 1; // タイルの周囲に追加するピクセル数（+1はsmoothedHeightsのbufferが1あるため）
+const tileSize = 256; // タイルのサイズ（ピクセル）
 
 function dem2CsProtocol(
     protocol = 'cs', 
@@ -90,9 +96,6 @@ function dem2CsProtocol(
             ];
             }
 
-            const tileSize = 256; // タイルのサイズ（ピクセル）
-            const buffer = 12; // 中央から読み込む範囲（ピクセル） （ウェイトファイルのサイズ-1）/2で算出
-
             // 結合用のキャンバスを作成
             const mergedCanvas = new OffscreenCanvas(tileSize + buffer * 2, tileSize + buffer * 2);
             const mergedCtx = mergedCanvas.getContext('2d');
@@ -135,29 +138,34 @@ function dem2CsProtocol(
             });
 
             // 傾斜と色を計算
-            const mergedImageData = mergedCtx.getImageData(0, 0, tileSize + buffer * 2, tileSize + buffer * 2);
             const mergedWidth = tileSize + buffer * 2;
+            const mergedImageData = mergedCtx.getImageData(0, 0, mergedWidth, mergedWidth);
 
             // mergedImageDataの各ピクセルの標高を計算
             const mergedHeights = [];
-            for (let row = 0; row < tileSize + buffer * 2; row++) {
-                for (let col = 0; col < tileSize + buffer * 2; col++) {
-                    const index = (row * (tileSize + buffer * 2) + col) * 4;
+            for (let row = 0; row < mergedWidth; row++) {
+                for (let col = 0; col < mergedWidth; col++) {
+                    const index = (row * (mergedWidth) + col) * 4;
                     const height = calculateHeight(mergedImageData.data[index], mergedImageData.data[index + 1], mergedImageData.data[index + 2]);
                     mergedHeights.push(height);
                 }
             }
+            // mergedHeightsのデータ数　＝　(mergedWidth) * (mergedWidth)
 
             // outputImageDataの各ピクセルの標高を平滑化（ウェイトファイルを使用）
+            // 曲率の計算用に1ピクセル分余分に計算する
             const smoothedHeights = [];
-            for (let row = buffer; row < tileSize + buffer; row++) {
-                for (let col = buffer; col < tileSize + buffer; col++) {
+            for (let row = buffer -1 ; row < tileSize + buffer + 1; row++) {
+                for (let col = buffer -1 ; col < tileSize + buffer + 1; col++) {
+/*                     console.log(row, col); */
                     let sum = 0;
                     let weightSum = 0;
-                    for (let i = -buffer; i <= buffer; i++) {
-                        for (let j = -buffer; j <= buffer; j++) {
-                            const mergedIndex = ((row + i) * (tileSize + buffer * 2) + (col + j));
-                            const weight = weightFile[i + buffer][j + buffer];
+                    for (let i = -radius ; i <= radius; i++) {
+                        for (let j = -radius ; j <= radius; j++) {
+                            const mergedIndex = ((row + i) * (mergedWidth) + (col + j));
+/*                             console.log(i+radius, j+radius); */
+                            const weight = weightFile[i + radius][j + radius];
+/*                             console.log(i+radius, j+radius,weight); */
                             sum += mergedHeights[mergedIndex] * weight;
                             weightSum += weight;
                         }
@@ -165,22 +173,25 @@ function dem2CsProtocol(
                     smoothedHeights.push(sum / weightSum);
                 }
             }
+/*             console.log(smoothedHeights.length); // (tileSize + 2) * (tileSize + 2)
+            console.log(smoothedHeights); */
 
             // 平滑化した標高から曲率を計算
-            const curvatures = [];
+            // const curvatures = [];
             const cellSize = pixelLength;
-            for (let row = 1; row < tileSize - 1; row++) {
-                for (let col = 1; col < tileSize - 1; col++) {
-                    const index = row * tileSize + col;
-                    const z1 = smoothedHeights[index - tileSize - 1];
-                    const z2 = smoothedHeights[index - tileSize];
-                    const z3 = smoothedHeights[index - tileSize + 1];
+            for (let row = 0; row < tileSize; row++) {
+                for (let col = 0; col < tileSize; col++) {
+                    const index = ( (row + 1) * ( tileSize + 2 ) ) + (col + 1);
+/*                     console.log('index:', index, 'row:', row, 'col:', col); */
+                    const z1 = smoothedHeights[index - ( tileSize + 2 ) - 1];
+                    const z2 = smoothedHeights[index - ( tileSize + 2 )];
+                    const z3 = smoothedHeights[index - ( tileSize + 2 ) + 1];
                     const z4 = smoothedHeights[index - 1];
                     const z5 = smoothedHeights[index];
                     const z6 = smoothedHeights[index + 1];
-                    const z7 = smoothedHeights[index + tileSize - 1];
-                    const z8 = smoothedHeights[index + tileSize];
-                    const z9 = smoothedHeights[index + tileSize + 1];
+                    const z7 = smoothedHeights[index + ( tileSize + 2 ) - 1];
+                    const z8 = smoothedHeights[index + ( tileSize + 2 )];
+                    const z9 = smoothedHeights[index + ( tileSize + 2 ) + 1];
                     
                     const cellArea = cellSize * cellSize;
                     const r = ((z4 + z6) / 2 - z5) / cellArea;
