@@ -115,7 +115,7 @@
                 <span>水平</span>
             </div>
             <div class="note pc-only">
-                ※「Ctrl+ドラッグ」や「右上の方位マークのドラッグ」でも変更可
+                ※「Ctrl+ドラッグ」「右クリックでドラッグ」「右上の方位マークのドラッグ」でも変更可
             </div>
             <div class="note mobile-only">
                 ※右上の方位マークのドラッグでも変更可

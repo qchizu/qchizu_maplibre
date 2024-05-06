@@ -256,7 +256,7 @@ function setLayerVisibility(map, layerId, visible) {
   }
 }
 
-// マジックナンバーの定数化
+// 定数
 const HILLSHADE_EXAGGERATION = 0.4;
 const HILLSHADE_HIGHLIGHT_COLOR = "rgb(255, 255, 255)";
 const CONTOUR_LINE_WIDTH_FACTOR = 2;
@@ -266,7 +266,7 @@ export function updateTerrainLayers(map, selectedDemSource, demSources, contourI
 
   // Update relief layer
   updateReliefLayer(map, selectedDemSource, demSources);
-
+  
   // Update slope layer
   updateSlopeLayer(map, selectedDemSource, demSources);
 
