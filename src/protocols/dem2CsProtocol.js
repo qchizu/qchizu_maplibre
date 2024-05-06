@@ -1,39 +1,6 @@
 import { addProtocol } from 'maplibre-gl';
-
-// ガウシアン関数によるウェイトファイル
-const weightFile = [
-    [0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000],
-    [0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000],
-    [0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.001, 0.001, 0.002, 0.002, 0.003, 0.004, 0.004, 0.004, 0.003, 0.002, 0.002, 0.001, 0.001, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000],
-    [0.000, 0.000, 0.000, 0.000, 0.000, 0.001, 0.002, 0.003, 0.005, 0.007, 0.009, 0.011, 0.011, 0.011, 0.009, 0.007, 0.005, 0.003, 0.002, 0.001, 0.000, 0.000, 0.000, 0.000, 0.000],
-    [0.000, 0.000, 0.000, 0.000, 0.001, 0.002, 0.004, 0.007, 0.012, 0.017, 0.023, 0.027, 0.029, 0.027, 0.023, 0.017, 0.012, 0.007, 0.004, 0.002, 0.001, 0.000, 0.000, 0.000, 0.000],
-    [0.000, 0.000, 0.000, 0.001, 0.002, 0.004, 0.009, 0.016, 0.027, 0.040, 0.053, 0.062, 0.066, 0.062, 0.053, 0.040, 0.027, 0.016, 0.009, 0.004, 0.002, 0.001, 0.000, 0.000, 0.000],
-    [0.000, 0.000, 0.001, 0.002, 0.004, 0.009, 0.018, 0.034, 0.056, 0.082, 0.108, 0.128, 0.135, 0.128, 0.108, 0.082, 0.056, 0.034, 0.018, 0.009, 0.004, 0.002, 0.001, 0.000, 0.000],
-    [0.000, 0.000, 0.001, 0.003, 0.007, 0.016, 0.034, 0.062, 0.103, 0.151, 0.200, 0.236, 0.249, 0.236, 0.200, 0.151, 0.103, 0.062, 0.034, 0.016, 0.007, 0.003, 0.001, 0.000, 0.000],
-    [0.000, 0.000, 0.002, 0.005, 0.012, 0.027, 0.056, 0.103, 0.169, 0.249, 0.329, 0.389, 0.411, 0.389, 0.329, 0.249, 0.169, 0.103, 0.056, 0.027, 0.012, 0.005, 0.002, 0.000, 0.000],
-    [0.000, 0.001, 0.002, 0.007, 0.017, 0.040, 0.082, 0.151, 0.249, 0.368, 0.486, 0.574, 0.607, 0.574, 0.486, 0.368, 0.249, 0.151, 0.082, 0.040, 0.017, 0.007, 0.002, 0.001, 0.000],
-    [0.000, 0.001, 0.003, 0.009, 0.023, 0.053, 0.108, 0.200, 0.329, 0.486, 0.641, 0.757, 0.801, 0.757, 0.641, 0.486, 0.329, 0.200, 0.108, 0.053, 0.023, 0.009, 0.003, 0.001, 0.000],
-    [0.000, 0.001, 0.004, 0.011, 0.027, 0.062, 0.128, 0.236, 0.389, 0.574, 0.757, 0.895, 0.946, 0.895, 0.757, 0.574, 0.389, 0.236, 0.128, 0.062, 0.027, 0.011, 0.004, 0.001, 0.000],
-    [0.000, 0.001, 0.004, 0.011, 0.029, 0.066, 0.135, 0.249, 0.411, 0.607, 0.801, 0.946, 1.000, 0.946, 0.801, 0.607, 0.411, 0.249, 0.135, 0.066, 0.029, 0.011, 0.004, 0.001, 0.000],
-    [0.000, 0.001, 0.004, 0.011, 0.027, 0.062, 0.128, 0.236, 0.389, 0.574, 0.757, 0.895, 0.946, 0.895, 0.757, 0.574, 0.389, 0.236, 0.128, 0.062, 0.027, 0.011, 0.004, 0.001, 0.000],
-    [0.000, 0.001, 0.003, 0.009, 0.023, 0.053, 0.108, 0.200, 0.329, 0.486, 0.641, 0.757, 0.801, 0.757, 0.641, 0.486, 0.329, 0.200, 0.108, 0.053, 0.023, 0.009, 0.003, 0.001, 0.000],
-    [0.000, 0.001, 0.002, 0.007, 0.017, 0.040, 0.082, 0.151, 0.249, 0.368, 0.486, 0.574, 0.607, 0.574, 0.486, 0.368, 0.249, 0.151, 0.082, 0.040, 0.017, 0.007, 0.002, 0.001, 0.000],
-    [0.000, 0.000, 0.002, 0.005, 0.012, 0.027, 0.056, 0.103, 0.169, 0.249, 0.329, 0.389, 0.411, 0.389, 0.329, 0.249, 0.169, 0.103, 0.056, 0.027, 0.012, 0.005, 0.002, 0.000, 0.000],
-    [0.000, 0.000, 0.001, 0.003, 0.007, 0.016, 0.034, 0.062, 0.103, 0.151, 0.200, 0.236, 0.249, 0.236, 0.200, 0.151, 0.103, 0.062, 0.034, 0.016, 0.007, 0.003, 0.001, 0.000, 0.000],
-    [0.000, 0.000, 0.001, 0.002, 0.004, 0.009, 0.018, 0.034, 0.056, 0.082, 0.108, 0.128, 0.135, 0.128, 0.108, 0.082, 0.056, 0.034, 0.018, 0.009, 0.004, 0.002, 0.001, 0.000, 0.000],
-    [0.000, 0.000, 0.000, 0.001, 0.002, 0.004, 0.009, 0.016, 0.027, 0.040, 0.053, 0.062, 0.066, 0.062, 0.053, 0.040, 0.027, 0.016, 0.009, 0.004, 0.002, 0.001, 0.000, 0.000, 0.000],
-    [0.000, 0.000, 0.000, 0.000, 0.001, 0.002, 0.004, 0.007, 0.012, 0.017, 0.023, 0.027, 0.029, 0.027, 0.023, 0.017, 0.012, 0.007, 0.004, 0.002, 0.001, 0.000, 0.000, 0.000, 0.000],
-    [0.000, 0.000, 0.000, 0.000, 0.000, 0.001, 0.002, 0.003, 0.005, 0.007, 0.009, 0.011, 0.011, 0.011, 0.009, 0.007, 0.005, 0.003, 0.002, 0.001, 0.000, 0.000, 0.000, 0.000, 0.000],
-    [0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.001, 0.001, 0.002, 0.002, 0.003, 0.004, 0.004, 0.004, 0.003, 0.002, 0.002, 0.001, 0.001, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000],
-    [0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000],
-    [0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000]
-];
-
-const weightSum = weightFile.reduce((acc, row) => acc + row.reduce((acc, weight) => acc + weight, 0), 0);
-const weightFileRowsCols = weightFile.length; // weightFileの行数・列数
-const radius = Math.floor(weightFileRowsCols / 2); // ウェイトファイルの「半径」
-const buffer = Math.floor(weightFileRowsCols / 2 ) + 1; // タイルの周囲に追加するピクセル数（+1はsmoothedHeightsのbufferが1あるため）
-const tileSize = 256; // タイルのサイズ（ピクセル）
+import { weightFile25, weightFile13, weightFile5, weightFile3 } from './weightFile';
+import { calculateTilePosition, getCalculateHeightFunction, calculatePixelResolution, calculateSlope } from './protocolUtils';
 
 function dem2CsProtocol(
     protocol = 'cs', 
@@ -60,9 +27,16 @@ function dem2CsProtocol(
                 tileX = parseInt(match[3], 10);
                 tileY = parseInt(match[2], 10);
             }
+            
+            const weightFile = zoomLevel === 17 ? weightFile25 : zoomLevel === 16 ? weightFile13 : zoomLevel === 15 ? weightFile5 : weightFile3; // ウェイトファイルの選択
+            const weightSum = weightFile.reduce((acc, row) => acc + row.reduce((acc, weight) => acc + weight, 0), 0);
+            const weightFileRowsCols = weightFile.length; // weightFileの行数・列数
+            const radius = Math.floor(weightFileRowsCols / 2); // ウェイトファイルの「半径」
+            const buffer = Math.floor(weightFileRowsCols / 2 ) + 1; // タイルの周囲に追加するピクセル数（+1はsmoothedHeightsのbufferが1あるため）
+            const tileSize = 256; // タイルのサイズ（ピクセル）
 
             // 1ピクセルあたりの距離を計算
-            const pixelLength = calculatePixelLength(zoomLevel, tileY);
+            const pixelLength = calculatePixelResolution(tileSize, zoomLevel, tileY);
 
             // 周辺を含む9つのタイル画像のソース
             // index: 0 1 2
@@ -71,29 +45,29 @@ function dem2CsProtocol(
             const baseTemplate = url.substring(0, url.lastIndexOf(`/${zoomLevel}/`) + 1) + `${zoomLevel}/`;
             let tileImagesSrc = [];
             if (xyOrder === 'xy') {
-            tileImagesSrc = [
-                {index: 0, src: baseTemplate + (tileX-1) + '/' + (tileY-1) + '.png'}, // 左上
-                {index: 1, src: baseTemplate + tileX + '/' + (tileY-1) + '.png'}, // 上
-                {index: 2, src: baseTemplate + (tileX+1) + '/' + (tileY-1) + '.png'}, // 右上
-                {index: 3, src: baseTemplate + (tileX-1) + '/' + tileY + '.png'}, // 左
-                {index: 4, src: url}, // 中央
-                {index: 5, src: baseTemplate + (tileX+1) + '/' + tileY + '.png'}, // 右
-                {index: 6, src: baseTemplate + (tileX-1) + '/' + (tileY+1) + '.png'}, // 左下
-                {index: 7, src: baseTemplate + tileX + '/' + (tileY+1) + '.png'}, // 下
-                {index: 8, src: baseTemplate + (tileX+1) + '/' + (tileY+1) + '.png'} // 右下
-            ];
+                tileImagesSrc = [
+                    {index: 0, src: baseTemplate + (tileX-1) + '/' + (tileY-1) + '.png'}, // 左上
+                    {index: 1, src: baseTemplate + tileX + '/' + (tileY-1) + '.png'}, // 上
+                    {index: 2, src: baseTemplate + (tileX+1) + '/' + (tileY-1) + '.png'}, // 右上
+                    {index: 3, src: baseTemplate + (tileX-1) + '/' + tileY + '.png'}, // 左
+                    {index: 4, src: url}, // 中央
+                    {index: 5, src: baseTemplate + (tileX+1) + '/' + tileY + '.png'}, // 右
+                    {index: 6, src: baseTemplate + (tileX-1) + '/' + (tileY+1) + '.png'}, // 左下
+                    {index: 7, src: baseTemplate + tileX + '/' + (tileY+1) + '.png'}, // 下
+                    {index: 8, src: baseTemplate + (tileX+1) + '/' + (tileY+1) + '.png'} // 右下
+                ];
             } else if (xyOrder === 'yx') {
-            tileImagesSrc = [
-                {index: 0, src: baseTemplate + (tileY-1) + '/' + (tileX-1) + '.png'}, // 左上
-                {index: 1, src: baseTemplate + (tileY-1) + '/' + tileX + '.png'}, // 上
-                {index: 2, src: baseTemplate + (tileY-1) + '/' + (tileX+1) + '.png'}, // 右上
-                {index: 3, src: baseTemplate + tileY + '/' + (tileX-1) + '.png'}, // 左
-                {index: 4, src: url}, // 中央
-                {index: 5, src: baseTemplate + tileY + '/' + (tileX+1) + '.png'}, // 右
-                {index: 6, src: baseTemplate + (tileY+1) + '/' + (tileX-1) + '.png'}, // 左下
-                {index: 7, src: baseTemplate + (tileY+1) + '/' + tileX + '.png'}, // 下
-                {index: 8, src: baseTemplate + (tileY+1) + '/' + (tileX+1) + '.png'} // 右下
-            ];
+                tileImagesSrc = [
+                    {index: 0, src: baseTemplate + (tileY-1) + '/' + (tileX-1) + '.png'}, // 左上
+                    {index: 1, src: baseTemplate + (tileY-1) + '/' + tileX + '.png'}, // 上
+                    {index: 2, src: baseTemplate + (tileY-1) + '/' + (tileX+1) + '.png'}, // 右上
+                    {index: 3, src: baseTemplate + tileY + '/' + (tileX-1) + '.png'}, // 左
+                    {index: 4, src: url}, // 中央
+                    {index: 5, src: baseTemplate + tileY + '/' + (tileX+1) + '.png'}, // 右
+                    {index: 6, src: baseTemplate + (tileY+1) + '/' + (tileX-1) + '.png'}, // 左下
+                    {index: 7, src: baseTemplate + (tileY+1) + '/' + tileX + '.png'}, // 下
+                    {index: 8, src: baseTemplate + (tileY+1) + '/' + (tileX+1) + '.png'} // 右下
+                ];
             }
 
             // 結合用のキャンバスを作成
@@ -154,25 +128,25 @@ function dem2CsProtocol(
             console.timeEnd('mergedHeights');
             // mergedHeightsのデータ数　＝　(mergedWidth) * (mergedWidth)
 
-            // outputImageDataの各ピクセルの標高を平滑化（ウェイトファイルを使用）
+            // outputImageDataの各ピクセルの標高を平滑化（ウェイトファイルを使用）　★処理の高速化が必要
             // 曲率の計算用に周辺に1ピクセル分余分に計算する
             console.time('smoothedHeights');
             const smoothedHeights = new Array((tileSize + buffer * 2) * (tileSize + buffer * 2));
             
             let index = 0;
             for (let row = buffer - 1; row < tileSize + buffer + 1; row++) {
-              for (let col = buffer - 1; col < tileSize + buffer + 1; col++) {
-                let sum = 0;
-                for (let i = -radius; i <= radius; i++) {
-                  const weightRow = weightFile[i + radius];
-                  for (let j = -radius; j <= radius; j++) {
-                    const mergedIndex = (row + i) * mergedWidth + (col + j);
-                    const weight = weightRow[j + radius];
-                    sum += mergedHeights[mergedIndex] * weight;
-                  }
+                for (let col = buffer - 1; col < tileSize + buffer + 1; col++) {
+                    let sum = 0;
+                    for (let i = -radius; i <= radius; i++) {
+                        const weightRow = weightFile[i + radius];
+                        for (let j = -radius; j <= radius; j++) {
+                            const mergedIndex = (row + i) * mergedWidth + (col + j);
+                            const weight = weightRow[j + radius];
+                            sum += mergedHeights[mergedIndex] * weight;
+                        }
+                    }
+                    smoothedHeights[index++] = sum / weightSum;
                 }
-                smoothedHeights[index++] = sum / weightSum;
-              }
             }
             console.timeEnd('smoothedHeights');
 
@@ -182,6 +156,7 @@ function dem2CsProtocol(
             const cellSize = pixelLength;
             for (let row = 0; row < tileSize; row++) {
                 for (let col = 0; col < tileSize; col++) {
+                    // https://github.com/MIERUNE/csmap-py/blob/main/csmap/calc.py を参考にした　★計算式要検証
                     const index = ( (row + 1) * ( tileSize + 2 ) ) + (col + 1);
                     const z1 = smoothedHeights[index - ( tileSize + 2 ) - 1];
                     const z2 = smoothedHeights[index - ( tileSize + 2 )];
@@ -199,7 +174,7 @@ function dem2CsProtocol(
                     const curvature = -2 * (r + t);
                     // curvatures.push(curvature);
 
-                    // 曲率に応じて色を設定（赤→黄→青に変化させる）し、タイルとして出力する　加筆してください
+                    // 曲率に応じて色を設定（赤→黄→青に変化させる）し、タイルとして出力する
                     let red, green, blue;
                     if (curvature <= 0) {
                         red = Math.round(255 * (1 - Math.min(Math.abs(curvature*5), 1)));
@@ -219,7 +194,7 @@ function dem2CsProtocol(
                 }       
             }
             console.timeEnd('curvatures');
-            // 以下のコード傾斜量図作成用のため、コメントアウト
+            // 以下のコード傾斜量図作成用のため、いったんコメントアウト
 /*             for (let row = 0; row < tileSize; row++) {
                 for (let col = 0; col < tileSize; col++) {
                     const mergedIndex = ((row + buffer) * mergedWidth + (col + buffer)) * 4;
@@ -255,86 +230,3 @@ function dem2CsProtocol(
 }
 
 export { dem2CsProtocol };
-
-// タイルの位置を計算する関数
-function calculateTilePosition(index, tileSize, buffer) {
-    let sx, sy, sWidth, sHeight, dx, dy;
-    const col = index % 3;
-    const row = Math.floor(index / 3);
-
-    if (index === 4) { // 中央のタイル
-        return { sx: 0, sy: 0, sWidth: tileSize, sHeight: tileSize, dx: buffer, dy: buffer };
-    } else {
-        sx = (col === 0) ? tileSize - buffer : 0;
-        sWidth = (col === 1) ? tileSize : buffer;
-        dx = (col === 2) ? tileSize + buffer : col * buffer;
-
-        sy = (row === 0) ? tileSize - buffer : 0;
-        sHeight = (row === 1) ? tileSize : buffer;
-        dy = (row === 2) ? tileSize + buffer : row * buffer;
-
-        return { sx, sy, sWidth, sHeight, dx, dy };
-    }
-}
-
-// エンコーディングに応じた標高計算関数を返す関数
-function getCalculateHeightFunction(encoding) {
-    switch (encoding) {
-        case 'gsi':
-        case 'gsj':
-            return (r, g, b) => {
-                const x = r * 65536 + g * 256 + b;
-                const twoToThePowerOf23 = 8388608; // 2 ** 23
-                const twoToThePowerOf24 = 16777216; // 2 ** 24
-                if (x === twoToThePowerOf23) {
-                    return -99999;
-                }
-                return x < twoToThePowerOf23 ? 0.01 * x : 0.01 * (x - twoToThePowerOf24);
-            };
-        case 'mapbox':
-            return (r, g, b) => (r * 65536 + g * 256 + b) / 10 - 10000;
-        case 'terrarium':
-            return (r, g, b) => r * 256 + g + b / 256 - 32768;
-        default:
-            throw new Error('Unsupported encoding type');
-    }
-}
-
-// タイルのピクセル長さを計算する関数
-function calculatePixelLength(zoomLevel1, tileY1) {
-    // 度数法から弧度法へ変換
-    function toRadians(degrees) {
-        return degrees * (Math.PI / 180);
-    }
-
-    // 弧度法から度数法へ変換
-    function toDegrees(radians) {
-        return radians * (180 / Math.PI);
-    }
-
-    // タイルがカバーする緯度範囲を求める
-    const n = 2 ** zoomLevel1;
-    const latRad = Math.atan(Math.sinh(Math.PI * (1 - 2 * tileY1 / n)));
-    const latDeg = toDegrees(latRad);
-
-    // タイルがカバーする緯度の中心での1度あたりの距離（約111.32km/度、地球の半径を6371kmと仮定）
-    const latLengthPerDegree = 111.32 * 1000; // メートル単位
-
-    // ズームレベル7でのタイル1辺あたりの度数
-    const degreesPerTile = 360 / n;
-
-    // タイルの実際の長さを計算（緯度による補正を考慮）
-    const pixelLength = latLengthPerDegree * degreesPerTile * Math.cos(toRadians(latDeg)) / 256;
-
-    return pixelLength;
-}
-
-// 斜面を計算する関数
-// 産業技術総合研究所のシームレス傾斜量図の計算式を使用した。
-// https://gbank.gsj.jp/seamless/slope/
-function calculateSlope(H00, H01, H10, pixelLength) {
-    let dx = H00 - H01;
-    let dy = H00 - H10;
-    let slope = Math.atan(Math.sqrt(dx * dx + dy * dy) / pixelLength) * (180 / Math.PI);
-    return slope;
-}
