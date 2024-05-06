@@ -7,6 +7,7 @@ export function updateBaseLayerVisibility(map, selectedBaseLayer) {
   map.setLayoutProperty('gsi_pale', 'visibility', selectedBaseLayer === 'gsi_pale' ? 'visible' : 'none');
   map.setLayoutProperty('gsi_seamlessphoto', 'visibility', selectedBaseLayer === 'gsi_seamlessphoto' ? 'visible' : 'none');
   map.setLayoutProperty('relief', 'visibility', selectedBaseLayer === 'relief' ? 'visible' : 'none');
+  map.setLayoutProperty('cs', 'visibility', selectedBaseLayer === 'cs' ? 'visible' : 'none');
   map.setLayoutProperty('white-background', 'visibility', selectedBaseLayer === 'white-background' ? 'visible' : 'none');
   map.setLayoutProperty('p17_ishikawa_f_01', 'visibility', selectedBaseLayer === 'p17_ishikawa_f_01' ? 'visible' : 'none');
   map.setLayoutProperty('ishikawa_cs', 'visibility', selectedBaseLayer === 'ishikawa_cs' ? 'visible' : 'none');
@@ -45,6 +46,35 @@ function updateReliefLayer(map, selectedDemSource, demSources) {
     id: "relief",
     type: "raster",
     source: "reliefSource",
+    layout: {
+      visibility: 'none'
+    },
+  });
+}
+
+// CS立体図の更新
+function updateCsLayer(map, selectedDemSource, demSources) {
+  if (map.getLayer("cs")) {
+    map.removeLayer("cs");
+  }
+  if (map.getSource("csSource")) {
+    map.removeSource("csSource");
+  }
+
+  const csTilesUrl = getTilesUrl(selectedDemSource, demSources, "cs");
+
+  map.addSource("csSource", {
+    "type": "raster",
+    "tiles": csTilesUrl,
+    "attribution": demSources[selectedDemSource]["attribution"],
+    "maxzoom": demSources[selectedDemSource]["maxzoom"],
+    "tileSize": demSources[selectedDemSource]["tileSize"],
+  });
+
+  map.addLayer({
+    id: "cs",
+    type: "raster",
+    source: "csSource",
     layout: {
       visibility: 'none'
     },
@@ -236,6 +266,10 @@ function getTilesUrl(selectedDemSource, demSources, layerType) {
       "gsj": url => "slopeGsj" + (demSources[selectedDemSource]["tiles"][0].includes('{x}/{y}') ? 'Xy' : 'Yx') + "://" + url,
       "mapbox": url => "slopeMapbox" + (demSources[selectedDemSource]["tiles"][0].includes('{x}/{y}') ? 'Xy' : 'Yx') + "://" + url
     },
+    "cs": {
+      "gsj": url => "csGsj" + (demSources[selectedDemSource]["tiles"][0].includes('{x}/{y}') ? 'Xy' : 'Yx') + "://" + url,
+      "mapbox": url => "csMapbox" + (demSources[selectedDemSource]["tiles"][0].includes('{x}/{y}') ? 'Xy' : 'Yx') + "://" + url
+    },
     "hillshade": {
       "gsj": url => "gsj://" + url,
       "mapbox": url => url
@@ -256,7 +290,7 @@ function setLayerVisibility(map, layerId, visible) {
   }
 }
 
-// マジックナンバーの定数化
+// 定数
 const HILLSHADE_EXAGGERATION = 0.4;
 const HILLSHADE_HIGHLIGHT_COLOR = "rgb(255, 255, 255)";
 const CONTOUR_LINE_WIDTH_FACTOR = 2;
@@ -267,6 +301,9 @@ export function updateTerrainLayers(map, selectedDemSource, demSources, contourI
   // Update relief layer
   updateReliefLayer(map, selectedDemSource, demSources);
 
+  // Update cs layer
+  updateCsLayer(map, selectedDemSource, demSources);
+  
   // Update slope layer
   updateSlopeLayer(map, selectedDemSource, demSources);
 
