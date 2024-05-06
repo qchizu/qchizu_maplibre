@@ -29,8 +29,8 @@ const weightFile = [
     [0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000, 0.000]
 ];
 
-// weightFileの行数・列数
-const weightFileRowsCols = weightFile.length;
+const weightSum = weightFile.reduce((acc, row) => acc + row.reduce((acc, weight) => acc + weight, 0), 0);
+const weightFileRowsCols = weightFile.length; // weightFileの行数・列数
 const radius = Math.floor(weightFileRowsCols / 2); // ウェイトファイルの「半径」
 const buffer = Math.floor(weightFileRowsCols / 2 ) + 1; // タイルの周囲に追加するピクセル数（+1はsmoothedHeightsのbufferが1あるため）
 const tileSize = 256; // タイルのサイズ（ピクセル）
@@ -142,6 +142,7 @@ function dem2CsProtocol(
             const mergedImageData = mergedCtx.getImageData(0, 0, mergedWidth, mergedWidth);
 
             // mergedImageDataの各ピクセルの標高を計算
+            console.time('mergedHeights');
             const mergedHeights = [];
             for (let row = 0; row < mergedWidth; row++) {
                 for (let col = 0; col < mergedWidth; col++) {
@@ -150,39 +151,38 @@ function dem2CsProtocol(
                     mergedHeights.push(height);
                 }
             }
+            console.timeEnd('mergedHeights');
             // mergedHeightsのデータ数　＝　(mergedWidth) * (mergedWidth)
 
             // outputImageDataの各ピクセルの標高を平滑化（ウェイトファイルを使用）
-            // 曲率の計算用に1ピクセル分余分に計算する
-            const smoothedHeights = [];
-            for (let row = buffer -1 ; row < tileSize + buffer + 1; row++) {
-                for (let col = buffer -1 ; col < tileSize + buffer + 1; col++) {
-/*                     console.log(row, col); */
-                    let sum = 0;
-                    let weightSum = 0;
-                    for (let i = -radius ; i <= radius; i++) {
-                        for (let j = -radius ; j <= radius; j++) {
-                            const mergedIndex = ((row + i) * (mergedWidth) + (col + j));
-/*                             console.log(i+radius, j+radius); */
-                            const weight = weightFile[i + radius][j + radius];
-/*                             console.log(i+radius, j+radius,weight); */
-                            sum += mergedHeights[mergedIndex] * weight;
-                            weightSum += weight;
-                        }
-                    }
-                    smoothedHeights.push(sum / weightSum);
+            // 曲率の計算用に周辺に1ピクセル分余分に計算する
+            console.time('smoothedHeights');
+            const smoothedHeights = new Array((tileSize + buffer * 2) * (tileSize + buffer * 2));
+            
+            let index = 0;
+            for (let row = buffer - 1; row < tileSize + buffer + 1; row++) {
+              for (let col = buffer - 1; col < tileSize + buffer + 1; col++) {
+                let sum = 0;
+                for (let i = -radius; i <= radius; i++) {
+                  const weightRow = weightFile[i + radius];
+                  for (let j = -radius; j <= radius; j++) {
+                    const mergedIndex = (row + i) * mergedWidth + (col + j);
+                    const weight = weightRow[j + radius];
+                    sum += mergedHeights[mergedIndex] * weight;
+                  }
                 }
+                smoothedHeights[index++] = sum / weightSum;
+              }
             }
-/*             console.log(smoothedHeights.length); // (tileSize + 2) * (tileSize + 2)
-            console.log(smoothedHeights); */
+            console.timeEnd('smoothedHeights');
 
             // 平滑化した標高から曲率を計算
             // const curvatures = [];
+            console.time('curvatures');
             const cellSize = pixelLength;
             for (let row = 0; row < tileSize; row++) {
                 for (let col = 0; col < tileSize; col++) {
                     const index = ( (row + 1) * ( tileSize + 2 ) ) + (col + 1);
-/*                     console.log('index:', index, 'row:', row, 'col:', col); */
                     const z1 = smoothedHeights[index - ( tileSize + 2 ) - 1];
                     const z2 = smoothedHeights[index - ( tileSize + 2 )];
                     const z3 = smoothedHeights[index - ( tileSize + 2 ) + 1];
@@ -216,9 +216,9 @@ function dem2CsProtocol(
                     outputImageData.data[outputIndex + 1] = green;
                     outputImageData.data[outputIndex + 2] = blue;
                     outputImageData.data[outputIndex + 3] = 255;
-        }
-    }
-
+                }       
+            }
+            console.timeEnd('curvatures');
             // 以下のコード傾斜量図作成用のため、コメントアウト
 /*             for (let row = 0; row < tileSize; row++) {
                 for (let col = 0; col < tileSize; col++) {
@@ -240,18 +240,16 @@ function dem2CsProtocol(
             }; */
 
             outputCtx.putImageData(outputImageData, 0, 0);
-
+            
             return outputCanvas.convertToBlob().then(async (blob) => {
                 return { data: await blob.arrayBuffer() };
             });
-
         
         } else {
             // Log an error or handle it appropriately
             return { data: null }; // return null or other appropriate value
         }
     };
-
     // Add the protocol
     addProtocol(protocol, loadFn);
 }
