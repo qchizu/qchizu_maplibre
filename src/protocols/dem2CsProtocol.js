@@ -128,11 +128,13 @@ function dem2CsProtocol(
             console.timeEnd('mergedHeights');
             // mergedHeightsのデータ数　＝　(mergedWidth) * (mergedWidth)
 
-            // outputImageDataの各ピクセルの標高を平滑化（ウェイトファイルを使用）　★処理の高速化が必要
+            // outputImageDataの各ピクセルの標高を平滑化（ウェイトファイルを使用）
             // 曲率の計算用に周辺に1ピクセル分余分に計算する
+            // ★処理の高速化が必要
+            // 試したこと
+            // Float32Array（32ビットの浮動小数点数）への変換→逆効果（×1.5倍くらい遅くなった）
             console.time('smoothedHeights');
             const smoothedHeights = new Array((tileSize + buffer * 2) * (tileSize + buffer * 2));
-            
             let index = 0;
             for (let row = buffer - 1; row < tileSize + buffer + 1; row++) {
                 for (let col = buffer - 1; col < tileSize + buffer + 1; col++) {
