@@ -50,7 +50,8 @@ JavaScriptのフレームワークとして、Svelteを利用しています。
 ### src/protocols/
 - `dem2ReliefProtocol.js` : DEMデータから段彩図を作成するプロトコル
 - `dem2SlopeProtocol.js` : DEMデータから傾斜量図を作成するプロトコル
-- `demTranscoderProtocol.js` : DEMデータの形式を変換（gsi、gsj→mapbox）するプロトコル
+- `demTranscoderProtocol.js` : DEMデータの形式を変換（gsj→mapbox）するプロトコル
+- `protocolUtils.js` : protocolから共通して利用する関数を定義
 
 ### src/stores/
 - `MapSources.js` : 地図のソースを定義
@@ -107,6 +108,11 @@ G空間情報センターが公開するグランドデータを加工したも�
 以降は、上記1～3と同じです。
 
 なお、これらの標高タイルの詳細は、G空間情報センターのページで公開しており[^6]、他のウェブサイトから利用することも可能です。
+
+## 今後の開発計画
+
+### CS立体図
+feature/dem2CsmapProtocolブランチで、標高タイルからCS立体図を作成するaddProtocolの作成作業中です。
 
 [^1]:国土地理院の資料に分かりやすい記載があります。
 令和２年度調査研究年報[「3次元地図データをウェブ地図に表示するための技術的検討」](https://www.gsi.go.jp/common/000235797.pdf)

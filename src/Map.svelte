@@ -21,7 +21,6 @@
   import { demTranscoderProtocol } from "./protocols/demTranscoderProtocol.js";
   import { dem2ReliefProtocol } from "./protocols/dem2ReliefProtocol.js";
   import { dem2SlopeProtocol } from "./protocols/dem2SlopeProtocol.js";
-  import { dem2CsProtocol } from "./protocols/dem2CsProtocol.js";
 
   //Functions
   import { updateBaseLayerVisibility, updateOverLayerVisibility, updateTerrainLayers } from './utils.js';
@@ -55,8 +54,6 @@
   dem2SlopeProtocol("slopeGsjXy", "gsj" ,"xy");
   dem2SlopeProtocol("slopeGsjYx", "gsj" ,"yx");
   dem2SlopeProtocol("slopeMapboxXy", "mapbox","xy");
-  dem2CsProtocol("csGsjXy", "gsj", "xy");
-  dem2CsProtocol("csGsjYx", "gsj", "yx");
   //maplibregl.addProtocol("pmtiles",new Protocol().tile);
 
 
