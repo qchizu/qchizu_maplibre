@@ -1,5 +1,6 @@
 import { addProtocol } from 'maplibre-gl';
-import { weightFile25, weightFile13, weightFile5, weightFile3 } from './weightFile';
+import { weightFile25, weightFile13, weightFile5, weightFile3, weightFile1 } from './weightFile';
+import { weightSum25, weightSum13, weightSum5, weightSum3, weightSum1 } from './weightFile';
 import { calculateTilePosition, getCalculateHeightFunction, calculatePixelResolution, calculateSlope } from './protocolUtils';
 
 function dem2CsProtocol(
@@ -28,8 +29,12 @@ function dem2CsProtocol(
                 tileY = parseInt(match[2], 10);
             }
             
-            const weightFile = zoomLevel === 17 ? weightFile25 : zoomLevel === 16 ? weightFile13 : zoomLevel === 15 ? weightFile5 : weightFile3; // ウェイトファイルの選択
+            // ★1ピクセルあたりの距離に応じてウェイトファイルを選択するように要変更↓
+            const weightFile = zoomLevel === 17 ? weightFile25 : zoomLevel === 16 ? weightFile13 : zoomLevel === 15 ? weightFile5 : zoomLevel === 14 ? weightFile3 : weightFile1; // ウェイトファイルの選択
+            const weightSumCheck = zoomLevel === 17 ? weightSum25 : zoomLevel === 16 ? weightSum13 : zoomLevel === 15 ? weightSum5 : zoomLevel === 14 ? weightSum3 : weightSum1; // ウェイトファイルの合計値
             const weightSum = weightFile.reduce((acc, row) => acc + row.reduce((acc, weight) => acc + weight, 0), 0);
+            console.log(zoomLevel,weightSum, weightSumCheck);
+
             const weightFileRowsCols = weightFile.length; // weightFileの行数・列数
             const radius = Math.floor(weightFileRowsCols / 2); // ウェイトファイルの「半径」
             const buffer = Math.floor(weightFileRowsCols / 2 ) + 1; // タイルの周囲に追加するピクセル数（+1はsmoothedHeightsのbufferが1あるため）
@@ -179,13 +184,13 @@ function dem2CsProtocol(
                     // 曲率に応じて色を設定（赤→黄→青に変化させる）し、タイルとして出力する
                     let red, green, blue;
                     if (curvature <= 0) {
-                        red = Math.round(255 * (1 - Math.min(Math.abs(curvature*5), 1)));
-                        green = Math.round(255 * (1 - Math.min(Math.abs(curvature*5), 1)));
+                        red = Math.round(255 * (1 - Math.min(Math.abs(curvature*3), 1)));
+                        green = Math.round(255 * (1 - Math.min(Math.abs(curvature*3), 1)));
                         blue = 255;
                     } else {
                         red = 255;
-                        green = Math.round(255 * (1 - Math.min(curvature*5, 1)));
-                        blue = Math.round(255 * (1 - Math.min(curvature*5, 1)));
+                        green = Math.round(255 * (1 - Math.min(curvature*3, 1)));
+                        blue = Math.round(255 * (1 - Math.min(curvature*3, 1)));
                     }
                     
                     const outputIndex = (row * tileSize + col) * 4;
