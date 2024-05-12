@@ -3,7 +3,7 @@ import { calculateTilePosition, getCalculateHeightFunction, calculatePixelResolu
 
 function dem2SlopeProtocol(
     protocol = 'slope', 
-    encoding = 'gsj', 
+    encoding = 'gsj',  //  'gsj', 'mapbox', 'terrarium'
     xyOrder = 'xy'
 ) {
     // エンコーディングに応じて適切な標高計算関数を取得

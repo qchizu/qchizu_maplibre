@@ -1,8 +1,9 @@
 import { addProtocol } from 'maplibre-gl';
+import {  getCalculateHeightFunction } from './protocolUtils';
 
 function dem2ReliefProtocol(
     protocol = 'relief',  
-    encoding = 'gsj', // 'gsi', 'gsj', 'mapbox', 'terrarium'
+    encoding = 'gsj', //  'gsj', 'mapbox', 'terrarium'
     gradation = true, //  true, false
     colorMap = [
         { limit: -99999, color: [255, 255, 255]}, // 無効値の色
@@ -24,6 +25,9 @@ function dem2ReliefProtocol(
         { limit: Infinity, color: [255, 255, 255] }
     ]
 ) {
+    // エンコーディングに応じて適切な標高計算関数を取得
+    const calculateHeight = getCalculateHeightFunction(encoding);
+
     const loadFn = async (params, abortController) => {
         const imageUrl = params.url.replace(`${protocol}://`, '');
         const response = await fetch(imageUrl, { signal: abortController.signal });
@@ -38,28 +42,6 @@ function dem2ReliefProtocol(
 
             const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
-            // 定数の事前計算
-            const twoToThePowerOf23 = 2 ** 23;
-            const twoToThePowerOf24 = 2 ** 24;
-
-            //encodingに応じて標高を計算する関数
-            function calculateHeight(encoding, r, g, b) {
-                let h;
-                if (encoding === 'gsj' || encoding === 'gsi') {
-                    const x = r * 65536 + g * 256 + b;
-                    if (x === twoToThePowerOf23) {
-                        h = -99999;
-                    } else {
-                        h = x < twoToThePowerOf23 ? 0.01 * x : 0.01 * (x - twoToThePowerOf24);
-                    }
-                } else if (encoding === 'mapbox') {
-                    h = (r * 65536 + g * 256 + b) / 10 - 10000;
-                } else if (encoding === 'terrarium') {
-                    h =  r * 256 + g + b / 256 - 32768;
-                }
-                return h;
-            }
-
             for (let i = 0; i < imageData.data.length; i += 4) {
                 const r = imageData.data[i];
                 const g = imageData.data[i + 1];
@@ -67,7 +49,7 @@ function dem2ReliefProtocol(
 
                 let h;
 
-                h = calculateHeight(encoding, r, g, b);
+                h = calculateHeight(r, g, b);
 
                 let [R, G, B] = [255, 255, 255]; // デフォルトの色
 
