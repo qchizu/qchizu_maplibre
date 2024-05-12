@@ -31,9 +31,9 @@ function dem2CsProtocol(
             }
 
             // console.time用の名前
-            const tileInfo = tileX + '-' + tileY + '-' + zoomLevel;
+            // const tileInfo = tileX + '-' + tileY + '-' + zoomLevel;
 
-            console.time(tileInfo + '画像読み込み、ガウシアンカーネル作成' );
+            // console.time(tileInfo + '画像読み込み、ガウシアンカーネル作成' );
 
             const tileSize = 256; // タイルのサイズ（ピクセル）
             const pixelLength = calculatePixelResolution(tileSize, zoomLevel, tileY); // 1ピクセルの実距離（メートル）
@@ -140,10 +140,10 @@ function dem2CsProtocol(
             const mergedWidth = tileSize + buffer * 2;
             const mergedImageData = mergedCtx.getImageData(0, 0, mergedWidth, mergedWidth);
 
-            console.timeEnd(tileInfo + '画像読み込み、ガウシアンカーネル作成' );
+            // console.timeEnd(tileInfo + '画像読み込み、ガウシアンカーネル作成' );
 
             // mergedImageDataの各ピクセルの標高を計算
-            console.time(tileInfo + 'mergedHeights計算');
+            // console.time(tileInfo + 'mergedHeights計算');
             const mergedHeights = [];
             for (let row = 0; row < mergedWidth; row++) {
                 for (let col = 0; col < mergedWidth; col++) {
@@ -153,12 +153,12 @@ function dem2CsProtocol(
                 }
             }
 
-            console.timeEnd(tileInfo + 'mergedHeights計算');
+            // console.timeEnd(tileInfo + 'mergedHeights計算');
             // mergedHeightsのデータ数　＝　(mergedWidth) * (mergedWidth)
             // outputImageDataの各ピクセルの標高を平滑化（ウェイトファイルを使用）
             // 曲率の計算用に周辺に1ピクセル分余分に計算する
 
-            console.time(tileInfo + '平滑化畳み込み計算');
+            // console.time(tileInfo + '平滑化畳み込み計算');
 
             // 高速化対象部分ここから(TensorFlow.js)
             const mergedHeightsTensor = tf.keep(tf.tensor(mergedHeights, [mergedWidth, mergedWidth]));
@@ -174,14 +174,14 @@ function dem2CsProtocol(
             smoothedHeightsTensor.dispose();
             // 高速化対象部分ここまで
 
-            console.timeEnd(tileInfo + '平滑化畳み込み計算');
+            // console.timeEnd(tileInfo + '平滑化畳み込み計算');
 
             // 平滑化した標高から曲率を計算し、CS立体図を作成
             const curvatures = [];
             // slopesの2次元配列を作成
             const slopes = [];
             
-            console.time(tileInfo + '曲率計算のloop');
+            // console.time(tileInfo + '曲率計算のloop');
             for (let row = 0; row < tileSize; row++) {
                 for (let col = 0; col < tileSize; col++) {
                     // https://github.com/MIERUNE/csmap-py/blob/main/csmap/calc.py を参考にした　★計算式要検証
@@ -210,8 +210,8 @@ function dem2CsProtocol(
                 }       
             }
 
-            console.timeEnd(tileInfo + '曲率計算のloop');
-            console.time(tileInfo + 'CS立体図の作成');
+            // console.timeEnd(tileInfo + '曲率計算のloop');
+            // console.time(tileInfo + 'CS立体図の作成');
 
             // 1-1 【立体図】の標高レイヤ（黒→白） mergedHeightsから切り出し
             const csRittaizu = tf.tidy(() => {
@@ -247,15 +247,15 @@ function dem2CsProtocol(
                 return csRittaizu;
             });
 
-            console.timeEnd(tileInfo + 'CS立体図の作成'); 
-            console.time(tileInfo + 'CS立体図の描画');
+            // console.timeEnd(tileInfo + 'CS立体図の作成'); 
+            // console.time(tileInfo + 'CS立体図の描画');
 
             await tf.browser.toPixels(csRittaizu.reshape([tileSize, tileSize, 3]).div(tf.scalar(255)), outputCanvas);
             csRittaizu.dispose();
             // 不要となったテンソルをメモリから解放
             csRittaizu.dispose();
 
-            console.timeEnd(tileInfo + 'CS立体図の描画');
+            // console.timeEnd(tileInfo + 'CS立体図の描画');
             return outputCanvas.convertToBlob().then(async (blob) => {
                 return { data: await blob.arrayBuffer() };
             });
