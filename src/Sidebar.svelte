@@ -11,6 +11,7 @@
         { id: 'gsi_pale', label: '淡色地図' },
         { id: 'gsi_seamlessphoto', label: '写真' },
         { id: 'relief', label: '段彩図◆' },
+        { id: 'cs', label: 'CS立体図(試験版)◆' },
         { id: 'white-background', label: '背景なし' },
         { id: 'p17_ishikawa_f_01', label: '能登写真(2020,2022)' },
         { id: 'ishikawa_cs', label: '能登CS立体図' },
