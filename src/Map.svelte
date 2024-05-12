@@ -20,6 +20,7 @@
   //Protocols
   import { demTranscoderProtocol } from "./protocols/demTranscoderProtocol.js";
   import { dem2ReliefProtocol } from "./protocols/dem2ReliefProtocol.js";
+  import { dem2CsProtocol } from "./protocols/dem2CsProtocol.js";
   import { dem2SlopeProtocol } from "./protocols/dem2SlopeProtocol.js";
 
   //Functions
@@ -51,6 +52,8 @@
   demTranscoderProtocol("gsj", "gsj");
   dem2ReliefProtocol('reliefGsj', "gsj", true);
   dem2ReliefProtocol('reliefMapbox',"mapbox",true);
+  dem2CsProtocol("csGsjXy", "gsj", "xy");
+  dem2CsProtocol("csGsjYx", "gsj", "yx");
   dem2SlopeProtocol("slopeGsjXy", "gsj" ,"xy");
   dem2SlopeProtocol("slopeGsjYx", "gsj" ,"yx");
   dem2SlopeProtocol("slopeMapboxXy", "mapbox","xy");
