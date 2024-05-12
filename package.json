@@ -14,6 +14,7 @@
     "vite": "^5.2.0"
   },
   "dependencies": {
+    "@tensorflow/tfjs": "^4.19.0",
     "maplibre-contour": "github:qchizu/maplibre-contour-adding-PNG-Elevation-Tile",
     "maplibre-gl": "^4.1.2",
     "pmtiles": "^3.0.5"

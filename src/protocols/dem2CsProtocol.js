@@ -1,12 +1,13 @@
 import { addProtocol } from 'maplibre-gl';
-import { weightFile25, weightFile13, weightFile5, weightFile3, weightFile1 } from './weightFile';
-import { weightSum25, weightSum13, weightSum5, weightSum3, weightSum1 } from './weightFile';
-import { calculateTilePosition, getCalculateHeightFunction, calculatePixelResolution, calculateSlope } from './protocolUtils';
+import { calculateTilePosition, getCalculateHeightFunction, calculatePixelResolution, calculateSlope, generateColorImage, generateColorImageWithMidColor, blendImages } from './protocolUtils';
+import * as tf from '@tensorflow/tfjs';
 
 function dem2CsProtocol(
     protocol = 'cs', 
     encoding = 'gsj', 
-    xyOrder = 'xy'
+    xyOrder = 'xy',
+    terrainScale = 1, // 表現する地形の規模の調整
+    // 今後の作業　出力図の種類も設定できるようにする
 ) {
     // エンコーディングに応じて適切な標高計算関数を取得
     const calculateHeight = getCalculateHeightFunction(encoding);
@@ -28,20 +29,38 @@ function dem2CsProtocol(
                 tileX = parseInt(match[3], 10);
                 tileY = parseInt(match[2], 10);
             }
-            
-            // ★1ピクセルあたりの距離に応じてウェイトファイルを選択するように要変更↓
-            const weightFile = zoomLevel === 17 ? weightFile25 : zoomLevel === 16 ? weightFile13 : zoomLevel === 15 ? weightFile5 : zoomLevel === 14 ? weightFile3 : weightFile1; // ウェイトファイルの選択
-            const weightSumCheck = zoomLevel === 17 ? weightSum25 : zoomLevel === 16 ? weightSum13 : zoomLevel === 15 ? weightSum5 : zoomLevel === 14 ? weightSum3 : weightSum1; // ウェイトファイルの合計値
-            const weightSum = weightFile.reduce((acc, row) => acc + row.reduce((acc, weight) => acc + weight, 0), 0);
-            console.log(zoomLevel,weightSum, weightSumCheck);
 
-            const weightFileRowsCols = weightFile.length; // weightFileの行数・列数
-            const radius = Math.floor(weightFileRowsCols / 2); // ウェイトファイルの「半径」
-            const buffer = Math.floor(weightFileRowsCols / 2 ) + 1; // タイルの周囲に追加するピクセル数（+1はsmoothedHeightsのbufferが1あるため）
+            // console.time用の名前
+            const tileInfo = tileX + '-' + tileY + '-' + zoomLevel;
+
+            console.time(tileInfo + '画像読み込み、ガウシアンカーネル作成' );
+
             const tileSize = 256; // タイルのサイズ（ピクセル）
+            const pixelLength = calculatePixelResolution(tileSize, zoomLevel, tileY); // 1ピクセルの実距離（メートル）
 
-            // 1ピクセルあたりの距離を計算
-            const pixelLength = calculatePixelResolution(tileSize, zoomLevel, tileY);
+            // メッシュサイズ1mの場合、25x25(25=12*2+1)のカーネルを使用するとして、メッシュサイズに応じたカーネルサイズを計算
+            const colorCoefficient = zoomLevel >= 15 ? 6 : (3 * 2 ** (15 - zoomLevel)); // 色の係数
+
+            // ガウシアンカーネル作成
+            const sigma =  3 / pixelLength * terrainScale;  // ガウシアンカーネルの標準偏差を計算(1mメッシュの場合、3m)
+            const kernelRadius = Math.ceil(sigma * 3); // カーネルの半径を計算（μ ± 3σに入るデータの割合は0.997なので、標準偏差の3倍までとした）
+            const kernelSize = [kernelRadius * 2 + 1, kernelRadius * 2 + 1]; // ガウシアンカーネルのサイズを定義
+
+            // tf.tidy()は、TensorFlow.jsのメモリ管理のメソッドで、この中で生成されたテンソルは、処理が終わったら自動的に解放される。
+            const kernel = tf.tidy(() => {
+                // tf.meshgridは、2Dグリッドの座標を生成
+                const [x, y] = tf.meshgrid(
+                    tf.linspace(-kernelRadius, kernelRadius, kernelSize[0]), //引数は、開始値、終了値、要素数
+                    tf.linspace(-kernelRadius, kernelRadius, kernelSize[1])
+                );
+
+                const kernel = tf.exp(tf.neg(tf.add(x.square(), y.square()).div(tf.scalar(2 * sigma * sigma)))); // ガウシアンカーネルの計算式を適用。
+                
+                return kernel
+                // return kernel.div(kernel.sum()); カーネルの合計が1になるように正規化すると干渉縞が発生する
+            });
+
+            const buffer = kernelRadius + 1; // タイルの周囲に追加するピクセル数（+1はsmoothedHeightsのbufferが1あるため）
 
             // 周辺を含む9つのタイル画像のソース
             // index: 0 1 2
@@ -113,54 +132,56 @@ function dem2CsProtocol(
                     const { sx, sy, sWidth, sHeight, dx, dy } = calculateTilePosition(index, tileSize, buffer);
                     // タイルをCanvasに描画
                     mergedCtx.drawImage(img, sx, sy, sWidth, sHeight, dx, dy, sWidth, sHeight);
+                    // 不要になったImageを解放
+                    img.close();
                 }
             });
 
-            // 傾斜と色を計算
             const mergedWidth = tileSize + buffer * 2;
             const mergedImageData = mergedCtx.getImageData(0, 0, mergedWidth, mergedWidth);
 
+            console.timeEnd(tileInfo + '画像読み込み、ガウシアンカーネル作成' );
+
             // mergedImageDataの各ピクセルの標高を計算
-            console.time('mergedHeights');
+            console.time(tileInfo + 'mergedHeights計算');
             const mergedHeights = [];
             for (let row = 0; row < mergedWidth; row++) {
                 for (let col = 0; col < mergedWidth; col++) {
                     const index = (row * (mergedWidth) + col) * 4;
-                    const height = calculateHeight(mergedImageData.data[index], mergedImageData.data[index + 1], mergedImageData.data[index + 2]);
+                    const height = calculateHeight(mergedImageData.data[index], mergedImageData.data[index + 1], mergedImageData.data[index + 2], mergedImageData.data[index + 3]);
                     mergedHeights.push(height);
                 }
             }
-            console.timeEnd('mergedHeights');
-            // mergedHeightsのデータ数　＝　(mergedWidth) * (mergedWidth)
 
+            console.timeEnd(tileInfo + 'mergedHeights計算');
+            // mergedHeightsのデータ数　＝　(mergedWidth) * (mergedWidth)
             // outputImageDataの各ピクセルの標高を平滑化（ウェイトファイルを使用）
             // 曲率の計算用に周辺に1ピクセル分余分に計算する
-            // ★処理の高速化が必要
-            // 試したこと
-            // Float32Array（32ビットの浮動小数点数）への変換→逆効果（×1.5倍くらい遅くなった）
-            console.time('smoothedHeights');
-            const smoothedHeights = new Array((tileSize + buffer * 2) * (tileSize + buffer * 2));
-            let index = 0;
-            for (let row = buffer - 1; row < tileSize + buffer + 1; row++) {
-                for (let col = buffer - 1; col < tileSize + buffer + 1; col++) {
-                    let sum = 0;
-                    for (let i = -radius; i <= radius; i++) {
-                        const weightRow = weightFile[i + radius];
-                        for (let j = -radius; j <= radius; j++) {
-                            const mergedIndex = (row + i) * mergedWidth + (col + j);
-                            const weight = weightRow[j + radius];
-                            sum += mergedHeights[mergedIndex] * weight;
-                        }
-                    }
-                    smoothedHeights[index++] = sum / weightSum;
-                }
-            }
-            console.timeEnd('smoothedHeights');
 
-            // 平滑化した標高から曲率を計算
-            // const curvatures = [];
-            console.time('curvatures');
-            const cellSize = pixelLength;
+            console.time(tileInfo + '平滑化畳み込み計算');
+
+            // 高速化対象部分ここから(TensorFlow.js)
+            const mergedHeightsTensor = tf.keep(tf.tensor(mergedHeights, [mergedWidth, mergedWidth]));
+            const smoothedHeightsTensor = tf.conv2d(
+                mergedHeightsTensor.expandDims(2).expandDims(0),
+                kernel.expandDims(2).expandDims(3),
+                1,
+                'valid'
+            ).squeeze([0, 3]).div(kernel.sum());
+            const smoothedHeights = smoothedHeightsTensor.dataSync();
+            // 不要となったテンソルをメモリから解放
+            mergedHeightsTensor.dispose();
+            smoothedHeightsTensor.dispose();
+            // 高速化対象部分ここまで
+
+            console.timeEnd(tileInfo + '平滑化畳み込み計算');
+
+            // 平滑化した標高から曲率を計算し、CS立体図を作成
+            const curvatures = [];
+            // slopesの2次元配列を作成
+            const slopes = [];
+            
+            console.time(tileInfo + '曲率計算のloop');
             for (let row = 0; row < tileSize; row++) {
                 for (let col = 0; col < tileSize; col++) {
                     // https://github.com/MIERUNE/csmap-py/blob/main/csmap/calc.py を参考にした　★計算式要検証
@@ -175,54 +196,66 @@ function dem2CsProtocol(
                     const z8 = smoothedHeights[index + ( tileSize + 2 )];
                     const z9 = smoothedHeights[index + ( tileSize + 2 ) + 1];
                     
-                    const cellArea = cellSize * cellSize;
+                    const cellArea = pixelLength * pixelLength;
                     const r = ((z4 + z6) / 2 - z5) / cellArea;
                     const t = ((z2 + z8) / 2 - z5) / cellArea;
                     const curvature = -2 * (r + t);
-                    // curvatures.push(curvature);
+                    curvatures.push(curvature); // 確認用なので、実際の処理では不要
 
-                    // 曲率に応じて色を設定（赤→黄→青に変化させる）し、タイルとして出力する
-                    let red, green, blue;
-                    if (curvature <= 0) {
-                        red = Math.round(255 * (1 - Math.min(Math.abs(curvature*3), 1)));
-                        green = Math.round(255 * (1 - Math.min(Math.abs(curvature*3), 1)));
-                        blue = 255;
-                    } else {
-                        red = 255;
-                        green = Math.round(255 * (1 - Math.min(curvature*3, 1)));
-                        blue = Math.round(255 * (1 - Math.min(curvature*3, 1)));
-                    }
-                    
-                    const outputIndex = (row * tileSize + col) * 4;
-                    outputImageData.data[outputIndex] = red;
-                    outputImageData.data[outputIndex + 1] = green;
-                    outputImageData.data[outputIndex + 2] = blue;
-                    outputImageData.data[outputIndex + 3] = 255;
+                    const mergedIndex = ((row + buffer) * mergedWidth + (col + buffer));
+                    //console.log('mergedIndex:', mergedIndex, 'row:', row, 'col:', col, 'buffer:', buffer);
+                    // 傾斜を計算 slopeは0から90の範囲(?) 
+                    let slope = calculateSlope(mergedHeights[mergedIndex], mergedHeights[mergedIndex + 1], mergedHeights[mergedIndex + mergedWidth], pixelLength);
+                    slopes.push(slope);
                 }       
             }
-            console.timeEnd('curvatures');
-            // 以下のコード傾斜量図作成用のため、いったんコメントアウト
-/*             for (let row = 0; row < tileSize; row++) {
-                for (let col = 0; col < tileSize; col++) {
-                    const mergedIndex = ((row + buffer) * mergedWidth + (col + buffer)) * 4;
-                    const outputIndex = (row * tileSize + col) * 4;
-                                                
-                    // RGB値を使用して高さを計算
-                    let H00 = calculateHeight(mergedImageData.data[mergedIndex], mergedImageData.data[mergedIndex + 1], mergedImageData.data[mergedIndex + 2]);
-                    let H01 = calculateHeight(mergedImageData.data[mergedIndex + 4], mergedImageData.data[mergedIndex + 5], mergedImageData.data[mergedIndex + 6]);
-                    let H10 = calculateHeight(mergedImageData.data[mergedIndex + mergedWidth * 4], mergedImageData.data[mergedIndex + mergedWidth * 4 + 1], mergedImageData.data[mergedIndex + mergedWidth * 4 + 2]);
-                    let slope = calculateSlope(H00, H01, H10, pixelLength);
-                    let alpha = Math.min(Math.max(slope * 3, 0), 255); // alpha値は0から255の範囲に収める
 
-                    outputImageData.data[outputIndex] = 0;
-                    outputImageData.data[outputIndex + 1] = 0;
-                    outputImageData.data[outputIndex + 2] = 0;
-                    outputImageData.data[outputIndex + 3] = alpha;
-                }
-            }; */
+            console.timeEnd(tileInfo + '曲率計算のloop');
+            console.time(tileInfo + 'CS立体図の作成');
 
-            outputCtx.putImageData(outputImageData, 0, 0);
-            
+            // 1-1 【立体図】の標高レイヤ（黒→白） mergedHeightsから切り出し
+            const csRittaizu = tf.tidy(() => {
+
+                const mergedHeightsTensor2D = tf.tensor2d(mergedHeights, [mergedWidth, mergedWidth]);
+                const heightTensor2D = mergedHeightsTensor2D.slice([buffer, buffer], [tileSize, tileSize]);
+                let rittaizuHeightLayerTensor = generateColorImage(0, 500, { r: 0, g: 0, b: 0 }, { r: 255, g: 255, b: 255 }, heightTensor2D)
+
+                // 1-2 【立体図】の曲率レイヤ（紺→白）紺色は、RGB(42, 92, 170)（瑠璃色）とし、曲率0の場合も薄く着色されるよう最小値と最大値を調整した
+                const curvatureTensor2D = tf.tensor1d(curvatures, 'float32').reshape([tileSize, tileSize]);
+                const riittaizuCurvatureLayerTensor = generateColorImage(-0.4, 0.05, { r: 42, g: 92, b: 170 }, { r: 255, g: 255, b: 255 }, curvatureTensor2D);
+
+                // 1-3 【立体図】の傾斜レイヤ（白→茶）茶色は、RGB(189, 74, 29)(樺色)とした。
+                const slopeTensor2D = tf.tensor1d(slopes, 'float32').reshape([tileSize, tileSize]);
+                const riittaizuSlopeLayerTensor = generateColorImage(0, 40, { r: 255, g: 255, b: 255 }, { r: 189, g: 74, b: 29 }, slopeTensor2D); ;
+    
+
+                // 2-1 【曲率図】の曲率レイヤ（青→黄→赤）
+                const kyokuritsuzuCurvatureLayerTensor = generateColorImageWithMidColor(-0.2, 0.2, { r: 0, g: 0, b: 255 }, { r: 255, g: 255, b: 230 }, { r: 255, g: 0, b: 0 }, curvatureTensor2D);
+                        
+                // 2-2 【曲率図】の傾斜レイヤ（白→黒）
+                const kyokuritsuzuSlopeLayerTensor = generateColorImage(0, 40, { r: 255, g: 255, b: 255 }, { r: 0, g: 0, b: 0 }, slopeTensor2D);
+                      
+                // 1-1～3を重ね合わせて【立体図】の作成
+                let rittaizuTensor = blendImages(blendImages(rittaizuHeightLayerTensor, riittaizuCurvatureLayerTensor, 0.5), riittaizuSlopeLayerTensor, 0.5);
+                // console.log('rittaizuTensor:', rittaizuTensor);
+
+                // 2-1～3を重ね合わせて【曲率図】の作成
+                let kyokuritsuzuTensor = blendImages(kyokuritsuzuCurvatureLayerTensor, kyokuritsuzuSlopeLayerTensor, 0.5);
+
+                // CS立体図の作成
+                let csRittaizu = blendImages(rittaizuTensor, kyokuritsuzuTensor, 0.8); // 0の場合、立体図、1の場合、曲率図
+                return csRittaizu;
+            });
+
+            console.timeEnd(tileInfo + 'CS立体図の作成'); 
+            console.time(tileInfo + 'CS立体図の描画');
+
+            await tf.browser.toPixels(csRittaizu.reshape([tileSize, tileSize, 3]).div(tf.scalar(255)), outputCanvas);
+            csRittaizu.dispose();
+            // 不要となったテンソルをメモリから解放
+            csRittaizu.dispose();
+
+            console.timeEnd(tileInfo + 'CS立体図の描画');
             return outputCanvas.convertToBlob().then(async (blob) => {
                 return { data: await blob.arrayBuffer() };
             });
@@ -237,3 +270,6 @@ function dem2CsProtocol(
 }
 
 export { dem2CsProtocol };
+
+
+

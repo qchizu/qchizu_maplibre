@@ -117,9 +117,9 @@ function dem2SlopeProtocol(
                     const outputIndex = (row * tileSize + col) * 4;
                                                 
                     // RGB値を使用して高さを計算
-                    let H00 = calculateHeight(mergedImageData.data[mergedIndex], mergedImageData.data[mergedIndex + 1], mergedImageData.data[mergedIndex + 2]);
-                    let H01 = calculateHeight(mergedImageData.data[mergedIndex + 4], mergedImageData.data[mergedIndex + 5], mergedImageData.data[mergedIndex + 6]);
-                    let H10 = calculateHeight(mergedImageData.data[mergedIndex + mergedWidth * 4], mergedImageData.data[mergedIndex + mergedWidth * 4 + 1], mergedImageData.data[mergedIndex + mergedWidth * 4 + 2]);
+                    let H00 = calculateHeight(mergedImageData.data[mergedIndex], mergedImageData.data[mergedIndex + 1], mergedImageData.data[mergedIndex + 2], mergedImageData.data[mergedIndex + 3]);
+                    let H01 = calculateHeight(mergedImageData.data[mergedIndex + 4], mergedImageData.data[mergedIndex + 5], mergedImageData.data[mergedIndex + 6], mergedImageData.data[mergedIndex + 7]);
+                    let H10 = calculateHeight(mergedImageData.data[mergedIndex + mergedWidth * 4], mergedImageData.data[mergedIndex + mergedWidth * 4 + 1], mergedImageData.data[mergedIndex + mergedWidth * 4 + 2], mergedImageData.data[mergedIndex + mergedWidth * 4 + 3]);
                     let slope = calculateSlope(H00, H01, H10, pixelLength);
                     let alpha = Math.min(Math.max(slope * 3, 0), 255); // alpha値は0から255の範囲に収める
 
