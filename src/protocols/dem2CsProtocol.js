@@ -31,7 +31,8 @@ function dem2CsProtocol(
             }
 
             // console.time用の名前
-            // const tileInfo = tileX + '-' + tileY + '-' + zoomLevel;
+/*             const tileInfo = tileX + '-' + tileY + '-' + zoomLevel;
+            console.log('tileInfo:', tileInfo); */
 
             // console.time(tileInfo + '画像読み込み、ガウシアンカーネル作成' );
 
@@ -159,8 +160,6 @@ function dem2CsProtocol(
             // 曲率の計算用に周辺に1ピクセル分余分に計算する
 
             // console.time(tileInfo + '平滑化畳み込み計算');
-
-            // 高速化対象部分ここから(TensorFlow.js)
             const mergedHeightsTensor = tf.keep(tf.tensor(mergedHeights, [mergedWidth, mergedWidth]));
             const smoothedHeightsTensor = tf.conv2d(
                 mergedHeightsTensor.expandDims(2).expandDims(0),
@@ -172,7 +171,6 @@ function dem2CsProtocol(
             // 不要となったテンソルをメモリから解放
             mergedHeightsTensor.dispose();
             smoothedHeightsTensor.dispose();
-            // 高速化対象部分ここまで
 
             // console.timeEnd(tileInfo + '平滑化畳み込み計算');
 
@@ -220,17 +218,21 @@ function dem2CsProtocol(
                 const heightTensor2D = mergedHeightsTensor2D.slice([buffer, buffer], [tileSize, tileSize]);
                 let rittaizuHeightLayerTensor = generateColorImage(0, 500, { r: 0, g: 0, b: 0 }, { r: 255, g: 255, b: 255 }, heightTensor2D)
 
+                // slopeTensor2Dの値に係数をかける
+                
+
                 // 1-2 【立体図】の曲率レイヤ（紺→白）紺色は、RGB(42, 92, 170)（瑠璃色）とし、曲率0の場合も薄く着色されるよう最小値と最大値を調整した
-                const curvatureTensor2D = tf.tensor1d(curvatures, 'float32').reshape([tileSize, tileSize]);
-                const riittaizuCurvatureLayerTensor = generateColorImage(-0.4, 0.05, { r: 42, g: 92, b: 170 }, { r: 255, g: 255, b: 255 }, curvatureTensor2D);
+                const curvatureCoefficient = Math.sqrt(terrainScale); // 曲率の係数（terrainScaleの平方根）
+                const curvaturesWithCoefficient = curvatures.map(curvature => curvature * curvatureCoefficient);
+                const curvatureWithCoefficientTensor2D = tf.tensor1d(curvaturesWithCoefficient, 'float32').reshape([tileSize, tileSize]);
+                const riittaizuCurvatureLayerTensor = generateColorImage(-0.4, 0.05, { r: 42, g: 92, b: 170 }, { r: 255, g: 255, b: 255 }, curvatureWithCoefficientTensor2D);
 
                 // 1-3 【立体図】の傾斜レイヤ（白→茶）茶色は、RGB(189, 74, 29)(樺色)とした。
                 const slopeTensor2D = tf.tensor1d(slopes, 'float32').reshape([tileSize, tileSize]);
                 const riittaizuSlopeLayerTensor = generateColorImage(0, 40, { r: 255, g: 255, b: 255 }, { r: 189, g: 74, b: 29 }, slopeTensor2D); ;
     
-
                 // 2-1 【曲率図】の曲率レイヤ（青→黄→赤）
-                const kyokuritsuzuCurvatureLayerTensor = generateColorImageWithMidColor(-0.2, 0.2, { r: 0, g: 0, b: 255 }, { r: 255, g: 255, b: 230 }, { r: 255, g: 0, b: 0 }, curvatureTensor2D);
+                const kyokuritsuzuCurvatureLayerTensor = generateColorImageWithMidColor(-0.2, 0.2, { r: 0, g: 0, b: 255 }, { r: 255, g: 255, b: 230 }, { r: 255, g: 0, b: 0 }, curvatureWithCoefficientTensor2D);
                         
                 // 2-2 【曲率図】の傾斜レイヤ（白→黒）
                 const kyokuritsuzuSlopeLayerTensor = generateColorImage(0, 40, { r: 255, g: 255, b: 255 }, { r: 0, g: 0, b: 0 }, slopeTensor2D);

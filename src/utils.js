@@ -1,3 +1,4 @@
+import { removeProtocol } from 'maplibre-gl';
 import mlcontour from '../node_modules/maplibre-contour/dist/index'; //一部改変
 let terrainControl;
 
@@ -315,4 +316,39 @@ export function updateTerrainLayers(map, selectedDemSource, demSources, contourI
 
   // Update terrain control
   updateTerrainControl(map, selectedDemSource, demSources, maplibregl);
+}
+
+// パラメーター変更によるCS立体図の更新
+export function updateCsLayerWithNewParams(map, selectedDemSource, demSources, dem2CsProtocol, csParameters ,selectedBaseLayer) {
+  if (map.getLayer("cs")) {
+    map.removeLayer("cs");
+  }
+  if (map.getSource("csSource")) {
+    map.removeSource("csSource");
+  }
+
+  removeProtocol("csGsjXy");
+  removeProtocol("csGsjYx");
+  dem2CsProtocol("csGsjXy", "gsj", "xy", csParameters.terrainScale);
+  dem2CsProtocol("csGsjYx", "gsj", "yx", csParameters.terrainScale);
+
+  const csTilesUrl = getTilesUrl(selectedDemSource, demSources, "cs");
+
+  map.addSource("csSource", {
+    "type": "raster",
+    "tiles": csTilesUrl,
+    "attribution": demSources[selectedDemSource]["attribution"],
+    "maxzoom": demSources[selectedDemSource]["maxzoom"],
+    "tileSize": demSources[selectedDemSource]["tileSize"],
+  });
+
+  map.addLayer({
+    id: "cs",
+    type: "raster",
+    source: "csSource",
+    layout: {
+      visibility: selectedBaseLayer === 'cs' ? 'visible' : 'none'
+    },
+  },"relief" // このレイヤーの上に重ねる。
+  );
 }
