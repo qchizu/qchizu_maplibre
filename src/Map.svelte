@@ -16,6 +16,7 @@
   import { demSources } from './stores/DemSources.js'; //標高タイル定義
   import { selectedDemSource } from './stores/SelectedDemSource.js'; //選択中の標高タイル
   import { pitch } from './stores/Pitch.js'; //傾斜角度
+  import { CsParameters } from './stores/CsParameters'; //CS立体図のパラメーター
 
   //Protocols
   import { demTranscoderProtocol } from "./protocols/demTranscoderProtocol.js";
@@ -24,7 +25,7 @@
   import { dem2SlopeProtocol } from "./protocols/dem2SlopeProtocol.js";
 
   //Functions
-  import { updateBaseLayerVisibility, updateOverLayerVisibility, updateTerrainLayers } from './utils.js';
+  import { updateBaseLayerVisibility, updateOverLayerVisibility, updateTerrainLayers, updateCsLayerWithNewParams } from './utils.js';
 
   //定数の定義
   //等高線間隔
@@ -51,14 +52,13 @@
   // addProtocolを設定
   demTranscoderProtocol("gsj", "gsj");
   dem2ReliefProtocol('reliefGsj', "gsj", true);
-  dem2ReliefProtocol('reliefMapbox',"mapbox",true);
+  //dem2ReliefProtocol('reliefMapbox',"mapbox",true);
   dem2CsProtocol("csGsjXy", "gsj", "xy");
   dem2CsProtocol("csGsjYx", "gsj", "yx");
   dem2SlopeProtocol("slopeGsjXy", "gsj" ,"xy");
   dem2SlopeProtocol("slopeGsjYx", "gsj" ,"yx");
-  dem2SlopeProtocol("slopeMapboxXy", "mapbox","xy");
+  //dem2SlopeProtocol("slopeMapboxXy", "mapbox","xy");
   //maplibregl.addProtocol("pmtiles",new Protocol().tile);
-
 
   // 地図の初期化処理
   function initializeMap() {
@@ -211,6 +211,16 @@
   $: {
     if ($pitch && initialLoadComplete) {
       map.setPitch($pitch);
+    }
+  }
+
+  let previousTerrainScale = $CsParameters.terrainScale;
+
+  //CsParametersの値（CS立体図のパラメーター）を監視してCS立体図の表示を更新
+  $: {
+    if ($CsParameters && previousTerrainScale !== $CsParameters.terrainScale && initialLoadComplete) {
+      previousTerrainScale = $CsParameters.terrainScale;
+      updateCsLayerWithNewParams(map, $selectedDemSource, $demSources, dem2CsProtocol, $CsParameters, $selectedBaseLayer);
     }
   }
 </script>

@@ -5,17 +5,19 @@
     import { selectedOverLayers } from './stores/SelectedOverLayers';
     import { selectedDemSource } from './stores/SelectedDemSource.js';
     import { pitch } from './stores/Pitch.js';
+    import { CsParameters } from './stores/CsParameters';
 
+    // 背景（基図）の選択肢
     const baseLayers = [
-        { id: 'gsi_std', label: '標準地図' },
-        { id: 'gsi_pale', label: '淡色地図' },
-        { id: 'gsi_seamlessphoto', label: '写真' },
-        { id: 'relief', label: '段彩図◆' },
-        { id: 'cs', label: 'CS立体図(試験版)◆' },
-        { id: 'white-background', label: '背景なし' },
-        { id: 'p17_ishikawa_f_01', label: '能登写真(2020,2022)' },
-        { id: 'ishikawa_cs', label: '能登CS立体図' },
-        { id: 'ishikawa_rrim', label: '能登赤色立体地図' },
+        { id: 'gsi_std', label: '標準地図', showSettings: false },
+        { id: 'gsi_pale', label: '淡色地図', showSettings: false },
+        { id: 'gsi_seamlessphoto', label: '写真', showSettings: false },
+        { id: 'relief', label: '段彩図◆', showSettings: false },
+        { id: 'cs', label: 'CS立体図(試験版)◆', showSettings: true },
+        { id: 'white-background', label: '背景なし', showSettings: false },
+        { id: 'p17_ishikawa_f_01', label: '能登写真(2020,2022)', showSettings: false },
+        { id: 'ishikawa_cs', label: '能登CS立体図', showSettings: false },
+        { id: 'ishikawa_rrim', label: '能登赤色立体地図', showSettings: false },
     ];
 
     // オブジェクトから配列に変換（プルダウンリスト用）
@@ -61,55 +63,86 @@
     </div>
 
     <!-- 配列をもとにDEMソースのプルダウンリストを作成 -->
-    <fieldset>
-        <legend>標高データ</legend>
-        <select bind:value={$selectedDemSource}>
-            {#each demSourcesArray as source}
-            <option value={source.id}>{source.name}</option>
+    <div class="settings-section">
+        <h1 class="settings-title">標高データ</h1>
+        <div class="settings-item margin">
+            <select bind:value={$selectedDemSource}>
+                {#each demSourcesArray as source}
+                <option value={source.id}>{source.name}</option>
+                {/each}
+            </select>
+            <div class="note">
+                ◆印の描画に反映
+            </div>
+        </div>
+    </div>
+
+    <div class="settings-section">
+        <h1 class="settings-title">背景（基図）</h1>
+        <div class="settings-item-no-margin">
+            {#each baseLayers as layer}
+            <div class="choice-elements-group"> <!-- 選択肢(チェックボックスorラジオボタン)+設定 -->
+                <label class="choice-element"> <!-- 選択肢(チェックボックスorラジオボタン) -->
+                    <input
+                        type="radio"
+                        id="{layer.id}"
+                        value="{layer.id}"
+                        name="baseMap"
+                        bind:group="{$selectedBaseLayer}"
+                    />
+                    <span>
+                        {layer.label}
+                    </span>
+                </label>
+                <!--CS立体図の設定-->
+                {#if layer.id === 'cs' && $selectedBaseLayer === 'cs'}
+                <div class="params-settings">
+                    <div class="params-setting-item">
+                        <div class="params-setting-title">表現する地形のスケール　係数: {$CsParameters.terrainScale}</div>
+                        <input class="slider" type="range" min="0.2" max="2" step="0.2" bind:value={$CsParameters.terrainScale} />
+                        <div class="slider-labels">
+                            <span>小</span>
+                            <span>大</span>
+                        </div>
+                    </div>
+                </div>
+                {/if}
+            </div>
             {/each}
-        </select>
-        <div class="note">
-            ◆印の描画に反映
         </div>
-    </fieldset>
+    </div>
 
-    <fieldset>
-        <legend>背景（基図）</legend>
-        {#each baseLayers as layer}
-          <div>
-            <input
-              type="radio"
-              id="{layer.id}"
-              value="{layer.id}"
-              name="baseMap"
-              bind:group="{$selectedBaseLayer}"
-            />
-            <label class="layer-label" for="{layer.id}">{layer.label}</label>
-          </div>
-        {/each}
-    </fieldset>
+    <div class="settings-section">
+        <h1 class="settings-title">重ね合わせ</h1>
+        <div class="settings-item">
+            <div class="choice-elements-group">
+                <label class="choice-element">
+                    <input type="checkbox" id="slope" value="slope" name="overlay" on:change={updateSelection}/>
+                    <span>傾斜量図◆</span>
+                </label>
+            </div>
+            <div class="choice-elements-group">
+                <label class="choice-element">
+                    <input type="checkbox" id="hillshade" value="hillshade" name="overlay" on:change={updateSelection}/>
+                    <span>陰影◆</span>
+                </label>
+            </div>
+            <div class="choice-elements-group">
+                <label class="choice-element">
+                    <input type="checkbox" id="contours" value="contours" name="overlay" on:change={updateSelection}/>
+                    <span>等高線◆</span>
+                </label>
+            </div>
+        </div>
+    </div>
 
-    <fieldset>
-        <legend>重ね合わせ</legend>
-        <div>
-          <input type="checkbox" id="slope" value="slope" name="overlay" on:change={updateSelection}/>
-          <label class="layer-label" for="slope">傾斜量図◆</label>
-        </div>
-        <div>
-          <input type="checkbox" id="hillshade" value="hillshade" name="overlay" on:change={updateSelection}/>
-          <label class="layer-label" for="hillshade">陰影◆</label>
-        </div>
-        <div>
-          <input type="checkbox" id="contours" value="contours" name="overlay" on:change={updateSelection}/>
-          <label class="layer-label" for="contours">等高線◆</label>
-        </div>
-    </fieldset>
-
-    <!--操作中はisInteractingをtrueにし、サイドバーが閉じないように設定-->    
-    <fieldset on:mousedown={() => isInteracting = true} on:mouseup={() => isInteracting = false} on:touchstart={() => isInteracting = true} on:touchend={() => isInteracting = false}>
-        <legend>視点（pitch）</legend>
+        
+    <div class="settings-section">
+        <h1 class="settings-title">視点（pitch）</h1>
+        <div class="settings-item margin">
             <div>
-                <input class="slider" type="range" min="0" max="85" step="1" bind:value={$pitch}/>
+                <!--操作中はisInteractingをtrueにし、サイドバーが閉じないように設定-->
+                <input class="slider" type="range" min="0" max="85" step="1" bind:value={$pitch}  on:mousedown={() => isInteracting = true} on:mouseup={() => isInteracting = false} on:touchstart={() => isInteracting = true} on:touchend={() => isInteracting = false}/>
             </div>
             <div class="slider-labels">
                 <span>垂直</span>
@@ -124,13 +157,14 @@
             <div class="note">
                 ※右上の山マーククリックで地形を立体表示◆
             </div>
-    </fieldset>
+        </div>
+    </div>
 
 </div>
 
 <div class="open-sidebar-button" class:open-sidebar-button-hidden={sidebarVisible} on:click={toggleSidebar}>
     <img src="layer_map.png" alt="Map Icon">
-    <div class="label">地図</div>
+    <div class="open-sidebar-button-label">地図</div>
 </div>
   
 <style>
@@ -140,9 +174,9 @@
         bottom: 0;
         width: 170px;
         left: 0;
-        padding: 10px;
-        bottom: 0px;
-        background-color: rgba(51, 51, 51, 0.5); /* 背景色 */
+        padding: 0;
+        background-color: rgba(255, 255, 255, 1);
+        border-right: 2px solid rgba(51, 51, 51, 0.8);
         transition: transform 0.3s ease-in-out;
         transform: translateX(0%);
         overflow-y: auto; /* スクロールを有効にする */
@@ -154,8 +188,8 @@
     }
 
     .close-sidebar-button {
-        display: flex;
-        justify-content: flex-end;
+        margin: 10px;
+        text-align: right;
     }
 
     .open-sidebar-button {
@@ -178,11 +212,7 @@
         height: auto;
     }
 
-    .open-sidebar-button-hidden {
-        display: none;
-    }
-
-    .label {
+    .open-sidebar-button-label {
         position: absolute;
         bottom: 0;
         width: 100%;
@@ -192,21 +222,34 @@
         text-align: center;
     }
 
-    .layer-label {
+    .open-sidebar-button-hidden {
+        display: none;
+    }
+
+    .settings-section {
+        margin: 10px 0;
+    }
+
+    .settings-title {
+        background-color: rgba(51, 51, 51, 1);
+        color: white;
+        font-size: 15px;
+        margin: 0;
+        padding: 0 10px;
+    }
+
+    .margin {
+        margin: 5px 10px;
+    }
+
+    .params-setting-item {
+        margin: 0 5px 0 20px;
+        border-top: 1px solid #ccc;
+    }
+
+    .params-setting-title {
         font-size: 14px;
-    }
-
-    fieldset {
-        background-color: rgba(229, 229, 229, 1);
-        border-width: 4px;
-        border-color: rgba(230, 180, 34, 1);
-        border-radius: 5px;
-        margin-top: 10px;
-    }
-
-    legend {
-        font-weight: bold;
-        background-color: rgba(229, 229, 229, 1);
+        color: rgb(0,80,112)
     }
 
     .slider {
@@ -216,11 +259,39 @@
     .slider-labels {
         display: flex;
         justify-content: space-between;
-        font-size: 14px;
+        font-size: small;
     }
+
     .note {
         font-size: 11px;
     }
+
+    /* ラジオボタンとチェックボックスの共通スタイル */
+    .choice-elements-group {
+        display: flex;
+        flex-direction: column;
+        font-size: 14px;
+        border-bottom: 1px solid #ccc;
+    }
+
+    .choice-element {
+        margin: 3px 0;
+    }
+
+    .choice-elements-group label {
+        display: flex;
+        align-items: flex-start;
+    }
+
+    .choice-element input[type="radio"],
+    .choice-element input[type="checkbox"] {
+        margin-right: 10px;
+    }
+
+    .choice-elements-group label span {
+        flex: 1;
+    }
+
 
     .pc-only {
         display: none; /* デフォルトでは非表示 */
