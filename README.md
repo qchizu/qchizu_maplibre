@@ -80,7 +80,7 @@ JavaScriptのフレームワークとして、Svelteを利用しています。
 ## 動作の仕組み
 
 ### PNG標高タイル（産総研、国土地理院方式の標高タイル）の利用
-PNG標高タイルは、0.01mの標高分解能で-83,886.07～83,886.07mまでの範囲を表現可能で、無効値も明確に定義されている[^1]という点で優れた規格ですが、MapLibre GL JSではサポートされていません。
+数値PNGタイルは、0.01mの標高分解能で-83,886.07～83,886.07mまでの範囲を表現可能で、無効値も明確に定義されている[^1]という点で優れた規格ですが、MapLibre GL JSではサポートされていません。
 
 そこで、本サイトでは、MapLibre GL JSのaddProtocolという仕組み[^2]を利用して、タイルをmapbox形式に変換しています。具体的には、自作のprotocol（demTranscoderProtocol.js）で変換し、立体表示と陰影表示に利用しています。
 
@@ -88,9 +88,9 @@ PNG標高タイルは、0.01mの標高分解能で-83,886.07～83,886.07mまで�
 MapLibre GL JSの機能[^3]を利用しています。
 
 ### 等高線
-maplibre-contourという等高線を表示できるプラグイン[^4]を一部改良して、PNG標高タイルを処理できるようにして利用しています。
+maplibre-contourという等高線を表示できるプラグイン[^4]を一部改良して、数値PNGタイルを処理できるようにして利用しています。
 
-改良したプラグインは、maplibre-contour-adding-PNG-Elevation-Tileという名前でGitHubで公開しています[^5]。
+改良したプラグインは、maplibre-contour-adding-Numerical-PNG-Tileという名前でGitHubで公開しています[^5]。
 
 ### 段彩図
 MapLibre GL JSのaddProtocolを利用して、標高タイルから標高値を計算し、標高値に応じて塗り分けて表示しています。
@@ -146,7 +146,7 @@ G空間情報センターが公開するグランドデータを加工したも�
 
 [^4]:https://github.com/onthegomap/maplibre-contour
 
-[^5]:https://github.com/qchizu/maplibre-contour-adding-PNG-Elevation-Tile
+[^5]:https://github.com/qchizu/maplibre-contour-adding-Numerical-PNG-Tile
 
-[^6]:基盤地図情報1m・5mメッシュDEM　標高データ（PNG標高タイル） https://www.geospatial.jp/ckan/dataset/qchizu_94dem_99gsi
-石川県能登地方　標高データ（PNG標高タイル） https://www.geospatial.jp/ckan/dataset/qchizu_94dem_17p_ishikawa_f
+[^6]:基盤地図情報1m・5mメッシュDEM　標高データ（数値PNGタイル） https://www.geospatial.jp/ckan/dataset/qchizu_94dem_99gsi
+石川県能登地方　標高データ（数値PNGタイル） https://www.geospatial.jp/ckan/dataset/qchizu_94dem_17p_ishikawa_f
