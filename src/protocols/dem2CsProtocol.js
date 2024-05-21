@@ -7,6 +7,14 @@ function dem2CsProtocol(
     encoding = 'gsj', 
     xyOrder = 'xy',
     terrainScale = 1, // 表現する地形の規模の調整
+    n = 14
+    // (pixelLength, terrainScale, n, sigma) = (3.8, 2, 1.3, 1.6) 0.4
+    // (pixelLength, terrainScale, n, sigma) = (7.6, 4, 1.5, 1.6) 0.8
+    // (pixelLength, terrainScale, n, sigma) = (15.2, 8, 2.5, 1.6) 1.7
+    // (pixelLength, terrainScale, n, sigma) = (15.2, 16, 3.5, 1.6) 1.7
+    // (pixelLength, terrainScale, n, sigma) = (30.4, 32, 5.0, 3.1) 3.5
+    // (pixelLength, terrainScale, n, sigma) = (60.8, 64, 9.0, 2.9) 7
+    // (pixelLength, terrainScale, n, sigma) = (121.6, 64, 14, 1.6) 14
     // 今後の作業　出力図の種類も設定できるようにする
 ) {
     // エンコーディングに応じて適切な標高計算関数を取得
@@ -31,8 +39,7 @@ function dem2CsProtocol(
             }
 
             // console.time用の名前
-/*             const tileInfo = tileX + '-' + tileY + '-' + zoomLevel;
-            console.log('tileInfo:', tileInfo); */
+            const tileInfo = tileX + '-' + tileY + '-' + zoomLevel;
 
             // console.time(tileInfo + '画像読み込み、ガウシアンカーネル作成' );
 
@@ -40,12 +47,15 @@ function dem2CsProtocol(
             const pixelLength = calculatePixelResolution(tileSize, zoomLevel, tileY); // 1ピクセルの実距離（メートル）
 
             // メッシュサイズ1mの場合、25x25(25=12*2+1)のカーネルを使用するとして、メッシュサイズに応じたカーネルサイズを計算
-            const colorCoefficient = zoomLevel >= 15 ? 6 : (3 * 2 ** (15 - zoomLevel)); // 色の係数
+            // const colorCoefficient = zoomLevel >= 15 ? 6 : (3 * 2 ** (15 - zoomLevel)); // 色の係数
 
             // ガウシアンカーネル作成
-            const sigma =  3 / pixelLength * terrainScale;  // ガウシアンカーネルの標準偏差を計算(1mメッシュの場合、3m)
+            const sigma =  Math.max(3 / pixelLength, 1.6) * terrainScale;  // ガウシアンカーネルの標準偏差を計算(1mメッシュの場合、3m)
             const kernelRadius = Math.ceil(sigma * 3); // カーネルの半径を計算（μ ± 3σに入るデータの割合は0.997なので、標準偏差の3倍までとした）
             const kernelSize = [kernelRadius * 2 + 1, kernelRadius * 2 + 1]; // ガウシアンカーネルのサイズを定義
+
+            // 色の調整用の出力
+            console.log('pixelLength:', pixelLength, 'terrainScale:', terrainScale, 'zoomLevel:', zoomLevel, 'n:', n, 'sigma:', sigma);
 
             // tf.tidy()は、TensorFlow.jsのメモリ管理のメソッドで、この中で生成されたテンソルは、処理が終わったら自動的に解放される。
             const kernel = tf.tidy(() => {
@@ -222,8 +232,10 @@ function dem2CsProtocol(
                 
 
                 // 1-2 【立体図】の曲率レイヤ（紺→白）紺色は、RGB(42, 92, 170)（瑠璃色）とし、曲率0の場合も薄く着色されるよう最小値と最大値を調整した
-                const curvatureCoefficient = Math.sqrt(terrainScale); // 曲率の係数（terrainScaleの平方根）
+                const curvatureCoefficient = Math.sqrt(terrainScale*n) * Math.max(pixelLength/8, 0.3); // 曲率の係数（terrainScaleの平方根）
                 const curvaturesWithCoefficient = curvatures.map(curvature => curvature * curvatureCoefficient);
+                // curvaturesの最大値を出力
+                console.log('curvatures max:', Math.max.apply(null, curvatures));
                 const curvatureWithCoefficientTensor2D = tf.tensor1d(curvaturesWithCoefficient, 'float32').reshape([tileSize, tileSize]);
                 const riittaizuCurvatureLayerTensor = generateColorImage(-0.4, 0.05, { r: 42, g: 92, b: 170 }, { r: 255, g: 255, b: 255 }, curvatureWithCoefficientTensor2D);
 
@@ -272,6 +284,3 @@ function dem2CsProtocol(
 }
 
 export { dem2CsProtocol };
-
-
-
