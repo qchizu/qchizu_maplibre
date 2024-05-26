@@ -4,9 +4,10 @@ import * as tf from '@tensorflow/tfjs';
 
 function dem2CsProtocol(
     protocol = 'cs', 
-    encoding = 'gsj', //gsj→numpngに変更予定 
+    encoding = 'gsj', //今度の作業　gsj→numpngに変更
     xyOrder = 'xy', // タイルのURLにおけるXYの順序 {z}/{x}/{y}.pngの場合は'xy'、{z}/{y}/{x}.pngの場合は'yx'
     terrainScale = 1, // 表現する地形の規模の調整
+    redAndBlueIntensity = 1,// 赤・青の濃度　今後の作業　調整できるようにする
     // 今後の作業　出力図の種類も設定できるようにする
 ) {
     // エンコーディングに応じて適切な標高計算関数を取得
@@ -160,13 +161,42 @@ function dem2CsProtocol(
 
             // console.time(tileInfo + '平滑化畳み込み計算');
             const mergedHeightsTensor = tf.keep(tf.tensor(mergedHeights, [mergedWidth, mergedWidth]));
-            const smoothedHeightsTensor = tf.conv2d(
-                mergedHeightsTensor.expandDims(2).expandDims(0),
+
+            // 無効値をマスクするためのバイナリマスクテンソルを作成
+            const validMask = mergedHeightsTensor.notEqual(-99999);
+
+            // 無効値を0に置き換えたテンソルを作成
+            const maskedHeightsTensor = mergedHeightsTensor.where(validMask, 0);
+
+            // カーネルの合計を計算
+            const kernelSum = tf.conv2d(
+                validMask.cast('float32').expandDims(2).expandDims(0),
                 kernel.expandDims(2).expandDims(3),
                 1,
                 'valid'
-            ).squeeze([0, 3]).div(kernel.sum());
+            ).squeeze([0, 3]);
+
+            // conv2d演算を行う
+            let smoothedHeightsTensor = tf.conv2d(
+                maskedHeightsTensor.expandDims(2).expandDims(0),
+                kernel.expandDims(2).expandDims(3),
+                1,
+                'valid'
+            ).squeeze([0, 3]);
+
+            // カーネルの合計で割る
+            smoothedHeightsTensor = smoothedHeightsTensor.div(kernelSum);
+
+            // validMaskをsmoothedHeightsTensorのサイズに切り抜く
+            const resizedValidMask = validMask.slice([buffer, buffer], [tileSize+2, tileSize+2]);
+
+            // 無効値の位置を元に戻す
+            smoothedHeightsTensor = smoothedHeightsTensor.where(resizedValidMask, smoothedHeightsTensor, -99999);
+
             const smoothedHeights = smoothedHeightsTensor.dataSync();
+
+            //console.log('smoothedHeights:', smoothedHeights);
+
             // 不要となったテンソルをメモリから解放
             mergedHeightsTensor.dispose();
             smoothedHeightsTensor.dispose();
@@ -181,27 +211,30 @@ function dem2CsProtocol(
             // console.time(tileInfo + '曲率計算のloop');
             for (let row = 0; row < tileSize; row++) {
                 for (let col = 0; col < tileSize; col++) {
-                    // 曲率を計算　https://github.com/MIERUNE/csmap-py/blob/main/csmap/calc.py を参考にした
-                    const index = ( (row + 1) * ( tileSize + 2 ) ) + (col + 1);
-                    const z2 = smoothedHeights[index - ( tileSize + 2 )];
-                    const z4 = smoothedHeights[index - 1];
-                    const z5 = smoothedHeights[index];
-                    const z6 = smoothedHeights[index + 1];
-                    const z8 = smoothedHeights[index + ( tileSize + 2 )];
-                    
-                    const cellArea = pixelLength * pixelLength;
-                    const r = ((z4 + z6) / 2 - z5) / cellArea;
-                    const t = ((z2 + z8) / 2 - z5) / cellArea;
-                    const curvature = -2 * (r + t); // general curvature
-                    curvatures.push(curvature);
-
-                    // 傾斜を計算 slopeは0から90の範囲(?) 
+                    // 傾斜を計算 slopeは0から90の範囲(?)
                     const mergedIndex = ((row + buffer) * mergedWidth + (col + buffer));
                     let slope = calculateSlope(mergedHeights[mergedIndex], mergedHeights[mergedIndex + 1], mergedHeights[mergedIndex + mergedWidth], pixelLength);
                     slopes.push(slope);
-                }       
-            }
 
+                    // 曲率を計算　https://github.com/MIERUNE/csmap-py/blob/main/csmap/calc.py を参考にした
+                    const index = ((row + 1) * (tileSize + 2)) + (col + 1);
+                    const z2 = smoothedHeights[index - (tileSize + 2)];
+                    const z4 = smoothedHeights[index - 1];
+                    const z5 = smoothedHeights[index];
+                    const z6 = smoothedHeights[index + 1];
+                    const z8 = smoothedHeights[index + (tileSize + 2)];
+                    const cellArea = pixelLength * pixelLength;
+                    const r = ((z4 + z6) / 2 - z5) / cellArea;
+                    const t = ((z2 + z8) / 2 - z5) / cellArea;
+                    if (mergedHeights[mergedIndex] == -99999) { // 無効値の場合の処理
+                        curvatures.push(-1);
+                    } else {
+                        const curvature = -2 * (r + t); // general curvature
+                        curvatures.push(curvature);
+                    }
+                }
+            }
+            
             // console.timeEnd(tileInfo + '曲率計算のloop');
             // console.time(tileInfo + 'CS立体図の作成');
 
@@ -214,7 +247,7 @@ function dem2CsProtocol(
                 const slopeTensor2D = tf.tensor1d(slopes, 'float32').reshape([tileSize, tileSize]);
 
                 // 曲率の係数（適切な色合いになるように調整するもの）
-                const curvatureCoefficient = Math.max(pixelLength/8, 0.3) * Math.sqrt(terrainScale * 14);
+                const curvatureCoefficient = Math.max(pixelLength/8, 0.3) * Math.sqrt(terrainScale * 14) * redAndBlueIntensity;
                 
                 // 1-1 【立体図】の標高レイヤ（黒→白）
                 const rittaizuHeightLayerTensor = generateColorImage(0, 500, { r: 0, g: 0, b: 0 }, { r: 255, g: 255, b: 255 }, heightTensor2D)
