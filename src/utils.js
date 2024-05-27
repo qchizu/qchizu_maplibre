@@ -54,13 +54,18 @@ function updateReliefLayer(map, selectedDemSource, demSources) {
 }
 
 // CS立体図の更新
-function updateCsLayer(map, selectedDemSource, demSources) {
+export function updateCsLayer(map, selectedDemSource, demSources, dem2CsProtocol, csParameters ,selectedBaseLayer) {
   if (map.getLayer("cs")) {
     map.removeLayer("cs");
   }
   if (map.getSource("csSource")) {
     map.removeSource("csSource");
   }
+
+  removeProtocol("csGsjXy");
+  removeProtocol("csGsjYx");
+  dem2CsProtocol("csGsjXy", "gsj", "xy", csParameters.terrainScale, csParameters.redAndBlueIntensity);
+  dem2CsProtocol("csGsjYx", "gsj", "yx", csParameters.terrainScale, csParameters.redAndBlueIntensity);
 
   const csTilesUrl = getTilesUrl(selectedDemSource, demSources, "cs");
 
@@ -77,9 +82,10 @@ function updateCsLayer(map, selectedDemSource, demSources) {
     type: "raster",
     source: "csSource",
     layout: {
-      visibility: 'none'
+      visibility: selectedBaseLayer === 'cs' ? 'visible' : 'none'
     },
-  });
+  },"relief" // このレイヤーの上に重ねる。
+  );
 }
 
 // 傾斜量図の更新
@@ -297,13 +303,13 @@ const HILLSHADE_HIGHLIGHT_COLOR = "rgb(255, 255, 255)";
 const CONTOUR_LINE_WIDTH_FACTOR = 2;
 
 // 標高Sourceの切り替え
-export function updateTerrainLayers(map, selectedDemSource, demSources, contourInterval, maplibregl) {
+export function updateTerrainLayers(map, selectedDemSource, demSources, contourInterval, maplibregl, dem2CsProtocol, csParameters, selectedBaseLayer) {
 
   // Update relief layer
   updateReliefLayer(map, selectedDemSource, demSources);
 
   // Update cs layer
-  updateCsLayer(map, selectedDemSource, demSources);
+  updateCsLayer(map, selectedDemSource, demSources, dem2CsProtocol, csParameters, selectedBaseLayer); // 今後の作業　他の関数もselectedBaseLayerを引数に追加
   
   // Update slope layer
   updateSlopeLayer(map, selectedDemSource, demSources);
@@ -316,39 +322,4 @@ export function updateTerrainLayers(map, selectedDemSource, demSources, contourI
 
   // Update terrain control
   updateTerrainControl(map, selectedDemSource, demSources, maplibregl);
-}
-
-// パラメーター変更によるCS立体図の更新
-export function updateCsLayerWithNewParams(map, selectedDemSource, demSources, dem2CsProtocol, csParameters ,selectedBaseLayer) {
-  if (map.getLayer("cs")) {
-    map.removeLayer("cs");
-  }
-  if (map.getSource("csSource")) {
-    map.removeSource("csSource");
-  }
-
-  removeProtocol("csGsjXy");
-  removeProtocol("csGsjYx");
-  dem2CsProtocol("csGsjXy", "gsj", "xy", csParameters.terrainScale);
-  dem2CsProtocol("csGsjYx", "gsj", "yx", csParameters.terrainScale);
-
-  const csTilesUrl = getTilesUrl(selectedDemSource, demSources, "cs");
-
-  map.addSource("csSource", {
-    "type": "raster",
-    "tiles": csTilesUrl,
-    "attribution": demSources[selectedDemSource]["attribution"],
-    "maxzoom": demSources[selectedDemSource]["maxzoom"],
-    "tileSize": demSources[selectedDemSource]["tileSize"],
-  });
-
-  map.addLayer({
-    id: "cs",
-    type: "raster",
-    source: "csSource",
-    layout: {
-      visibility: selectedBaseLayer === 'cs' ? 'visible' : 'none'
-    },
-  },"relief" // このレイヤーの上に重ねる。
-  );
 }

@@ -25,7 +25,7 @@
   import { dem2SlopeProtocol } from "./protocols/dem2SlopeProtocol.js";
 
   //Functions
-  import { updateBaseLayerVisibility, updateOverLayerVisibility, updateTerrainLayers, updateCsLayerWithNewParams } from './utils.js';
+  import { updateBaseLayerVisibility, updateOverLayerVisibility, updateTerrainLayers, updateCsLayer } from './utils.js';
 
   //定数の定義
   //等高線間隔
@@ -87,7 +87,7 @@
     //pitchの値をセット
     $pitch = map.getPitch();
     
-    updateTerrainLayers(map, $selectedDemSource, $demSources, contourInterval, maplibregl);
+    updateTerrainLayers(map, $selectedDemSource, $demSources, contourInterval, maplibregl, dem2CsProtocol, $CsParameters, $selectedBaseLayer);
     updateBaseLayerVisibility(map, $selectedBaseLayer);
     updateMapViewParameters();
 
@@ -189,7 +189,7 @@
   //selectedDemSourceの値を監視してupdateTerrainLayersを実行
   $: {
     if ($selectedDemSource && initialLoadComplete) {
-      updateTerrainLayers(map, $selectedDemSource, $demSources, contourInterval, maplibregl);
+      updateTerrainLayers(map, $selectedDemSource, $demSources, contourInterval, maplibregl, dem2CsProtocol, $CsParameters, $selectedBaseLayer);
     }
   }
 
@@ -215,12 +215,14 @@
   }
 
   let previousTerrainScale = $CsParameters.terrainScale;
+  let previousredAndBlueIntensity = $CsParameters.redAndBlueIntensity;
 
   //CsParametersの値（CS立体図のパラメーター）を監視してCS立体図の表示を更新
   $: {
-    if ($CsParameters && previousTerrainScale !== $CsParameters.terrainScale && initialLoadComplete) {
+    if ($CsParameters && previousTerrainScale !== $CsParameters.terrainScale && previousredAndBlueIntensity || $CsParameters.redAndBlueIntensity && initialLoadComplete) {
       previousTerrainScale = $CsParameters.terrainScale;
-      updateCsLayerWithNewParams(map, $selectedDemSource, $demSources, dem2CsProtocol, $CsParameters, $selectedBaseLayer);
+      previousredAndBlueIntensity = $CsParameters.redAndBlueIntensity;
+      updateCsLayer(map, $selectedDemSource, $demSources, dem2CsProtocol, $CsParameters, $selectedBaseLayer);
     }
   }
 </script>

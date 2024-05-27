@@ -262,7 +262,7 @@ function dem2CsProtocol(
                 const kyokuritsuzuCurvatureLayerTensor = generateColorImageWithMidColor(-0.2 / curvatureCoefficient, 0.2 / curvatureCoefficient, { r: 0, g: 0, b: 255 }, { r: 255, g: 255, b: 230 }, { r: 255, g: 0, b: 0 }, curvatureTensor2D);
                         
                 // 2-2 【曲率図】の傾斜レイヤ（白→黒）
-                const kyokuritsuzuSlopeLayerTensor = generateColorImage(0, 40, { r: 255, g: 255, b: 255 }, { r: 0, g: 0, b: 0 }, slopeTensor2D);
+                const kyokuritsuzuSlopeLayerTensor = generateColorImage(0, 40, { r: 255, g: 255, b: 255 }, { r: 50, g: 50, b: 50 }, slopeTensor2D);
                       
                 // 1-1～3を重ね合わせて【立体図】の作成
                 const rittaizuTensor = blendImages(blendImages(rittaizuHeightLayerTensor, riittaizuCurvatureLayerTensor, 0.5), riittaizuSlopeLayerTensor, 0.5);
