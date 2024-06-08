@@ -150,3 +150,19 @@ export function blendImages(baseImage, overlayImage, alpha) {
   
     return blendedImage;
 }
+
+// 乗算による重ね合わせ
+export function multiplyBlendImages(baseImage, overlayImage) {
+    // image1とimage2が同じ形状であることを確認
+    if (!baseImage.shape.every((dim, i) => dim === overlayImage.shape[i])) {
+      throw new Error('両方の画像は同じ形状である必要があります');
+    }
+  
+    // オーバーレイ画像を255で割る
+    const overlayNormalized = overlayImage.div(tf.scalar(255));
+  
+    // 画像を乗算でブレンド
+    const blendedImage = baseImage.mul(overlayNormalized);
+  
+    return blendedImage;
+  }
