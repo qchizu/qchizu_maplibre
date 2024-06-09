@@ -12,6 +12,7 @@
         { id: 'gsi_std', label: '標準地図', showSettings: false },
         { id: 'gsi_pale', label: '淡色地図', showSettings: false },
         { id: 'gsi_seamlessphoto', label: '写真', showSettings: false },
+        { id: 'open_street_map', label: 'OpenStreetMap', showSettings: false },
         { id: 'relief', label: '段彩図◆', showSettings: false },
         { id: 'cs', label: 'CS立体図(試験版)◆', showSettings: true },
         { id: 'white-background', label: '背景なし', showSettings: false },
@@ -103,6 +104,14 @@
                         <div class="slider-labels">
                             <span>小</span>
                             <span>大</span>
+                        </div>
+                    </div>
+                    <div class="params-setting-item">
+                        <div class="params-setting-title">赤・青の濃度<br>係数: {$CsParameters.redAndBlueIntensity}</div>
+                        <input class="slider" type="range" min="0.2" max="2" step="0.2" bind:value={$CsParameters.redAndBlueIntensity} />
+                        <div class="slider-labels">
+                            <span>薄</span>
+                            <span>濃</span>
                         </div>
                     </div>
                 </div>

@@ -21,6 +21,13 @@ export const mapSources = readable({
         tileSize: 256,
         maxzoom: 18,
     },
+    open_street_map: {
+        type: "raster",
+        tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
+        attribution: '©<a target="_blank"href="https://creativecommons.org/licenses/by-sa/2.0/">CCBYSA</a> <a target="_blank"href="https://www.openstreetmap.org/copyright">© OpenStreetMap contributors</a>',
+        tileSize: 256,
+        maxzoom: 19,
+    },
     p17_ishikawa_f_01: {
         type: "raster",
         tiles: ["https://mapdata.qchizu2.xyz/17p/ishikawa_f_01/{z}/{x}/{y}.png"],
@@ -31,7 +38,7 @@ export const mapSources = readable({
     ishikawa_cs: {
         type: "raster",
         tiles: ["https://www2.ffpri.go.jp/soilmap/tile/cs_noto/{z}/{x}/{y}.png"],
-        attribution: '<a target="_blank" href="https://www.geospatial.jp/ckan/dataset/2024-notowest-mtopo">森林総研</a>(石川県))',
+        attribution: '<a target="_blank" href="https://www2.ffpri.go.jp/soilmap/data-src.html">森林総研</a>(石川県))',
         tileSize: 256,
         maxzoom: 17,
     },
