@@ -22,10 +22,11 @@
   import { demTranscoderProtocol } from "./protocols/demTranscoderProtocol.js";
   import { dem2ReliefProtocol } from "./protocols/dem2ReliefProtocol.js";
   import { dem2CsProtocol } from "./protocols/dem2CsProtocol.js";
+  import { dem2RrimProtocol } from "./protocols/dem2RrimProtocol.js";
   import { dem2SlopeProtocol } from "./protocols/dem2SlopeProtocol.js";
 
   //Functions
-  import { updateBaseLayerVisibility, updateOverLayerVisibility, updateTerrainLayers, updateCsLayer } from './utils.js';
+  import { updateBaseLayerVisibility, updateOverLayerVisibility, updateTerrainLayers, updateCsLayer, updateRrimLayer } from './utils.js';
 
   //定数の定義
   //等高線間隔
@@ -55,6 +56,8 @@
   //dem2ReliefProtocol('reliefMapbox',"mapbox",true);
   dem2CsProtocol("csGsjXy", "gsj", "xy");
   dem2CsProtocol("csGsjYx", "gsj", "yx");
+  dem2RrimProtocol("rrimGsjXy", "gsj", "xy");
+  dem2RrimProtocol("rrimGsjYx", "gsj", "yx");
   dem2SlopeProtocol("slopeGsjXy", "gsj" ,"xy");
   dem2SlopeProtocol("slopeGsjYx", "gsj" ,"yx");
   //dem2SlopeProtocol("slopeMapboxXy", "mapbox","xy");
@@ -87,7 +90,7 @@
     //pitchの値をセット
     $pitch = map.getPitch();
     
-    updateTerrainLayers(map, $selectedDemSource, $demSources, contourInterval, maplibregl, dem2CsProtocol, $CsParameters, $selectedBaseLayer);
+    updateTerrainLayers(map, $selectedDemSource, $demSources, contourInterval, maplibregl, dem2CsProtocol, $CsParameters, dem2RrimProtocol, $selectedBaseLayer);
     updateBaseLayerVisibility(map, $selectedBaseLayer);
     updateMapViewParameters();
 
@@ -189,7 +192,7 @@
   //selectedDemSourceの値を監視してupdateTerrainLayersを実行
   $: {
     if ($selectedDemSource && initialLoadComplete) {
-      updateTerrainLayers(map, $selectedDemSource, $demSources, contourInterval, maplibregl, dem2CsProtocol, $CsParameters, $selectedBaseLayer);
+      updateTerrainLayers(map, $selectedDemSource, $demSources, contourInterval, maplibregl, dem2CsProtocol, $CsParameters, dem2RrimProtocol, $selectedBaseLayer);
     }
   }
 

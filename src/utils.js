@@ -9,6 +9,7 @@ export function updateBaseLayerVisibility(map, selectedBaseLayer) {
   map.setLayoutProperty('gsi_seamlessphoto', 'visibility', selectedBaseLayer === 'gsi_seamlessphoto' ? 'visible' : 'none');
   map.setLayoutProperty('relief', 'visibility', selectedBaseLayer === 'relief' ? 'visible' : 'none');
   map.setLayoutProperty('cs', 'visibility', selectedBaseLayer === 'cs' ? 'visible' : 'none');
+  map.setLayoutProperty('rrim', 'visibility', selectedBaseLayer === 'rrim' ? 'visible' : 'none');
   map.setLayoutProperty('white-background', 'visibility', selectedBaseLayer === 'white-background' ? 'visible' : 'none');
   map.setLayoutProperty('p17_ishikawa_f_01', 'visibility', selectedBaseLayer === 'p17_ishikawa_f_01' ? 'visible' : 'none');
   map.setLayoutProperty('ishikawa_cs', 'visibility', selectedBaseLayer === 'ishikawa_cs' ? 'visible' : 'none');
@@ -85,6 +86,41 @@ export function updateCsLayer(map, selectedDemSource, demSources, dem2CsProtocol
       visibility: selectedBaseLayer === 'cs' ? 'visible' : 'none'
     },
   },"relief" // このレイヤーの上に重ねる。
+  );
+}
+
+// RRIMの更新
+export function updateRrimLayer(map, selectedDemSource, demSources, dem2RrimProtocol, selectedBaseLayer) {
+  if (map.getLayer("rrim")) {
+    map.removeLayer("rrim");
+  }
+  if (map.getSource("rrimSource")) {
+    map.removeSource("rrimSource");
+  }
+
+  removeProtocol("rrimGsjXy");
+  removeProtocol("rrimGsjYx");
+  dem2RrimProtocol("rrimGsjXy", "gsj", "xy");
+  dem2RrimProtocol("rrimGsjYx", "gsj", "yx");
+
+  const rrimTilesUrl = getTilesUrl(selectedDemSource, demSources, "rrim");
+
+  map.addSource("rrimSource", {
+    "type": "raster",
+    "tiles": rrimTilesUrl,
+    "attribution": demSources[selectedDemSource]["attribution"],
+    "maxzoom": demSources[selectedDemSource]["maxzoom"],
+    "tileSize": demSources[selectedDemSource]["tileSize"],
+  });
+
+  map.addLayer({
+    id: "rrim",
+    type: "raster",
+    source: "rrimSource",
+    layout: {
+      visibility: selectedBaseLayer === 'rrim' ? 'visible' : 'none'
+    },
+  },"cs" // このレイヤーの上に重ねる。
   );
 }
 
@@ -277,6 +313,10 @@ function getTilesUrl(selectedDemSource, demSources, layerType) {
       "gsj": url => "csGsj" + (demSources[selectedDemSource]["tiles"][0].includes('{x}/{y}') ? 'Xy' : 'Yx') + "://" + url,
       "mapbox": url => "csMapbox" + (demSources[selectedDemSource]["tiles"][0].includes('{x}/{y}') ? 'Xy' : 'Yx') + "://" + url
     },
+    "rrim": {
+      "gsj": url => "rrimGsj" + (demSources[selectedDemSource]["tiles"][0].includes('{x}/{y}') ? 'Xy' : 'Yx') + "://" + url,
+      "mapbox": url => "rrimMapbox" + (demSources[selectedDemSource]["tiles"][0].includes('{x}/{y}') ? 'Xy' : 'Yx') + "://" + url
+    },
     "hillshade": {
       "gsj": url => "gsj://" + url,
       "mapbox": url => url
@@ -303,14 +343,17 @@ const HILLSHADE_HIGHLIGHT_COLOR = "rgb(255, 255, 255)";
 const CONTOUR_LINE_WIDTH_FACTOR = 2;
 
 // 標高Sourceの切り替え
-export function updateTerrainLayers(map, selectedDemSource, demSources, contourInterval, maplibregl, dem2CsProtocol, csParameters, selectedBaseLayer) {
+export function updateTerrainLayers(map, selectedDemSource, demSources, contourInterval, maplibregl, dem2CsProtocol, csParameters, dem2RrimProtocol, selectedBaseLayer) {
 
   // Update relief layer
   updateReliefLayer(map, selectedDemSource, demSources);
 
   // Update cs layer
   updateCsLayer(map, selectedDemSource, demSources, dem2CsProtocol, csParameters, selectedBaseLayer); // 今後の作業　他の関数もselectedBaseLayerを引数に追加
-  
+
+  // Update rrim layer
+  updateRrimLayer(map, selectedDemSource, demSources, dem2RrimProtocol, selectedBaseLayer);
+
   // Update slope layer
   updateSlopeLayer(map, selectedDemSource, demSources);
 
