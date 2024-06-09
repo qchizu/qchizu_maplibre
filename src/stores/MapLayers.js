@@ -24,6 +24,14 @@ export const mapLayers = readable([
             visibility: "none",
         },
     },
+    {
+        id: "open_street_map",
+        type: "raster",
+        source: "open_street_map",
+        layout: {
+            visibility: "none",
+        },
+    },
     //白い背景　レイヤーがないと地形の立体表示時に表示が乱れる
     {
         id: "white-background",

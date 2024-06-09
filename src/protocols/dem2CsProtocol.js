@@ -1,5 +1,5 @@
 import { addProtocol } from 'maplibre-gl';
-import { calculateTilePosition, getCalculateHeightFunction, calculatePixelResolution, calculateSlope, generateColorImage, generateColorImageWithMidColor, blendImages } from './protocolUtils';
+import { calculateTilePosition, getCalculateHeightFunction, calculatePixelResolution, calculateSlope, generateColorImage, generateColorImageWithMidColor, blendImages, multiplyBlendImages } from './protocolUtils';
 import * as tf from '@tensorflow/tfjs';
 
 function dem2CsProtocol(
@@ -217,6 +217,9 @@ function dem2CsProtocol(
                     slopes.push(slope);
 
                     // 曲率を計算　https://github.com/MIERUNE/csmap-py/blob/main/csmap/calc.py を参考にした
+                    // https://help.arcgis.com/en/arcgisdesktop/10.0/help/index.html#/How_Curvature_works/00q90000000t000000/
+                    // https://pro.arcgis.com/en/pro-app/latest/tool-reference/3d-analyst/curvature.htm
+                    // https://www.esri.com/arcgis-blog/products/product/imagery/understanding-curvature-rasters/
                     const index = ((row + 1) * (tileSize + 2)) + (col + 1);
                     const z2 = smoothedHeights[index - (tileSize + 2)];
                     const z4 = smoothedHeights[index - 1];
@@ -239,7 +242,12 @@ function dem2CsProtocol(
             // console.time(tileInfo + 'CS立体図の作成');
 
             // 1-1 【立体図】の標高レイヤ（黒→白） mergedHeightsから切り出し
-            const csRittaizu = tf.tidy(() => {
+            const csRittaizuTensor = tf.tidy(() => {
+                // curvatureTensor2Dの最小値、最大値を出力
+                // const minCurvature = Math.min(...curvatures);
+                // const maxCurvature = Math.max(...curvatures);
+                //console.log('minCurvature:', minCurvature, 'maxCurvature:', maxCurvature);
+
                 // テンソルの作成
                 const mergedHeightsTensor2D = tf.tensor2d(mergedHeights, [mergedWidth, mergedWidth]);
                 const heightTensor2D = mergedHeightsTensor2D.slice([buffer, buffer], [tileSize, tileSize]);
@@ -247,42 +255,55 @@ function dem2CsProtocol(
                 const slopeTensor2D = tf.tensor1d(slopes, 'float32').reshape([tileSize, tileSize]);
 
                 // 曲率の係数（適切な色合いになるように調整するもの）
-                const curvatureCoefficient = Math.max(pixelLength/8, 0.3) * Math.sqrt(terrainScale * 14) * redAndBlueIntensity;
+                // curvatureCoefficientの最適値　
+                // (1,1.1),(2,1.1),(4,2.2),(8,3.2),(16,6),(32,18),(65,35),(126,80),(250,160),(500,400)
+                // 最適値にフィットするように場合分けして近似式を求めたもの
+                let curvatureCoefficient;
+                if (pixelLength < 68) { // 68は２つの値が同じになるところ
+                    curvatureCoefficient = Math.max(pixelLength / 2,1.1) * Math.sqrt(terrainScale) * redAndBlueIntensity;
+                } else {
+                    curvatureCoefficient = 0.188 * Math.pow(pixelLength,1.232) * Math.sqrt(terrainScale) * redAndBlueIntensity;
+                }
+                // console.log('pixelLength', pixelLength,'sigma', sigma, 'curvatureCoefficient:', curvatureCoefficient);
                 
                 // 1-1 【立体図】の標高レイヤ（黒→白）
-                const rittaizuHeightLayerTensor = generateColorImage(0, 500, { r: 0, g: 0, b: 0 }, { r: 255, g: 255, b: 255 }, heightTensor2D)
+                const rittaizuHeightLayerTensor = generateColorImage(0, 3000, { r: 100, g: 100, b: 100 }, { r: 255, g: 255, b: 255 }, heightTensor2D)
 
-                // 1-2 【立体図】の曲率レイヤ（紺→白）紺色は、RGB(42, 92, 170)（瑠璃色）とし、曲率0の場合も薄く着色されるよう最小値と最大値を調整した
-                const riittaizuCurvatureLayerTensor = generateColorImage(-0.4 / curvatureCoefficient, 0.05 / curvatureCoefficient, { r: 42, g: 92, b: 170 }, { r: 255, g: 255, b: 255 }, curvatureTensor2D);
+                // 1-2 【立体図】の曲率レイヤ（紺→白）
+                const riittaizuCurvatureLayerTensor = generateColorImage(-0.25 / curvatureCoefficient, 0.05 / curvatureCoefficient, { r: 42, g: 92, b: 170 }, { r: 255, g: 255, b: 255 }, curvatureTensor2D);
 
-                // 1-3 【立体図】の傾斜レイヤ（白→茶）茶色は、RGB(189, 74, 29)(樺色)とした。
-                const riittaizuSlopeLayerTensor = generateColorImage(0, 40, { r: 255, g: 255, b: 255 }, { r: 189, g: 74, b: 29 }, slopeTensor2D); ;
+                // 1-3 【立体図】の傾斜レイヤ（白→茶）
+                const riittaizuSlopeLayerTensor = generateColorImage(0, 60, { r: 255, g: 255, b: 255 }, { r: 189, g: 74, b: 29 }, slopeTensor2D); ;
     
                 // 2-1 【曲率図】の曲率レイヤ（青→黄→赤）
-                const kyokuritsuzuCurvatureLayerTensor = generateColorImageWithMidColor(-0.2 / curvatureCoefficient, 0.2 / curvatureCoefficient, { r: 0, g: 0, b: 255 }, { r: 255, g: 255, b: 230 }, { r: 255, g: 0, b: 0 }, curvatureTensor2D);
+                // const kyokuritsuzuCurvatureLayerTensor = generateColorImageWithMidColor(-0.15 / curvatureCoefficient, 0.15 / curvatureCoefficient, { r: 50, g: 96, b: 207 }, { r: 255, g: 254, b: 190 }, { r: 230, g: 35, b: 30 }, curvatureTensor2D);
+                const kyokuritsuzuCurvatureLayerTensor = generateColorImageWithMidColor(-0.20 / curvatureCoefficient, 0.20 / curvatureCoefficient, { r: 0, g: 0, b: 255 }, { r: 255, g: 255, b: 240 }, { r: 255, g: 0, b: 0 }, curvatureTensor2D);
                         
                 // 2-2 【曲率図】の傾斜レイヤ（白→黒）
-                const kyokuritsuzuSlopeLayerTensor = generateColorImage(0, 40, { r: 255, g: 255, b: 255 }, { r: 0, g: 0, b: 0 }, slopeTensor2D);
+                const kyokuritsuzuSlopeLayerTensor = generateColorImage(0, 90, { r: 255, g: 255, b: 255 }, { r: 0, g: 0, b: 0 }, slopeTensor2D);
                       
                 // 1-1～3を重ね合わせて【立体図】の作成
-                const rittaizuTensor = blendImages(blendImages(rittaizuHeightLayerTensor, riittaizuCurvatureLayerTensor, 0.5), riittaizuSlopeLayerTensor, 0.5);
-                // console.log('rittaizuTensor:', rittaizuTensor);
+                // const rittaizuTensor = blendImages(blendImages(rittaizuHeightLayerTensor, riittaizuCurvatureLayerTensor, 0.5), riittaizuSlopeLayerTensor, 0.33);
 
                 // 2-1～3を重ね合わせて【曲率図】の作成
-                const kyokuritsuzuTensor = blendImages(kyokuritsuzuCurvatureLayerTensor, kyokuritsuzuSlopeLayerTensor, 0.5);
+                // const kyokuritsuzuTensor = blendImages(kyokuritsuzuCurvatureLayerTensor, kyokuritsuzuSlopeLayerTensor, 0.5);
 
                 // CS立体図の作成
-                const csRittaizu = blendImages(rittaizuTensor, kyokuritsuzuTensor, 0.8); // 0の場合、立体図、1の場合、曲率図
-                return csRittaizu;
+                // const csRittaizuTensor = blendImages(rittaizuTensor, kyokuritsuzuTensor, 0.5); // 0の場合、立体図、1の場合、曲率図
+
+                // CS立体図改良案
+                const csRittaizuTensor = multiplyBlendImages(blendImages(blendImages(blendImages(rittaizuHeightLayerTensor, riittaizuCurvatureLayerTensor, 0.5), riittaizuSlopeLayerTensor, 0.5), kyokuritsuzuCurvatureLayerTensor, 0.5), kyokuritsuzuSlopeLayerTensor); // 0の場合、立体図、1の場合、曲率図
+
+                return csRittaizuTensor;
             });
 
             // console.timeEnd(tileInfo + 'CS立体図の作成'); 
             // console.time(tileInfo + 'CS立体図の描画');
 
-            await tf.browser.toPixels(csRittaizu.reshape([tileSize, tileSize, 3]).div(tf.scalar(255)), outputCanvas);
+            await tf.browser.toPixels(csRittaizuTensor.reshape([tileSize, tileSize, 3]).div(tf.scalar(255)), outputCanvas);
 
             // 不要となったテンソルをメモリから解放
-            csRittaizu.dispose();
+            csRittaizuTensor.dispose();
 
             // console.timeEnd(tileInfo + 'CS立体図の描画');
             return outputCanvas.convertToBlob().then(async (blob) => {
