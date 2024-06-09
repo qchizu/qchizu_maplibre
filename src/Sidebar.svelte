@@ -105,6 +105,14 @@
                             <span>大</span>
                         </div>
                     </div>
+                    <div class="params-setting-item">
+                        <div class="params-setting-title">赤・青の濃度<br>係数: {$CsParameters.redAndBlueIntensity}</div>
+                        <input class="slider" type="range" min="0.2" max="2" step="0.2" bind:value={$CsParameters.redAndBlueIntensity} />
+                        <div class="slider-labels">
+                            <span>薄</span>
+                            <span>濃</span>
+                        </div>
+                    </div>
                 </div>
                 {/if}
             </div>
