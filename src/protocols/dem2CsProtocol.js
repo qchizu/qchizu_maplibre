@@ -31,9 +31,9 @@ function dem2CsProtocol(
                 tileY = parseInt(match[2], 10);
             }
 
-            // console.time用の名前
+            // // console.time用の名前
             // const tileInfo = tileX + '-' + tileY + '-' + zoomLevel;
-            // console.time(tileInfo + '画像読み込み、ガウシアンカーネル作成' );
+            // console.time(tileInfo + 'ガウシアンカーネル作成' );
 
             const tileSize = 256; // タイルのサイズ（ピクセル）
             const pixelLength = calculatePixelResolution(tileSize, zoomLevel, tileY); // 1ピクセルの実距離（メートル）
@@ -62,6 +62,9 @@ function dem2CsProtocol(
             });
 
             const buffer = kernelRadius + 1; // タイルの周囲に追加するピクセル数（+1はsmoothedHeightsのbufferが1あるため）
+
+            // console.timeEnd(tileInfo + 'ガウシアンカーネル作成' );
+            // console.time(tileInfo + '画像読み込み')
 
             // 周辺を含む9つのタイル画像のソース
             // index: 0 1 2
@@ -125,6 +128,9 @@ function dem2CsProtocol(
                 }
             });
 
+            // console.timeEnd(tileInfo + '画像読み込み')
+            // console.time(tileInfo + '画像結合' );
+
             // すべてのタイルが読み込まれたら処理を続行
             const images = await Promise.all(imagePromises);
             images.forEach(({ img, index }) => {
@@ -141,7 +147,7 @@ function dem2CsProtocol(
             const mergedWidth = tileSize + buffer * 2;
             const mergedImageData = mergedCtx.getImageData(0, 0, mergedWidth, mergedWidth);
 
-            // console.timeEnd(tileInfo + '画像読み込み、ガウシアンカーネル作成' );
+            // console.timeEnd(tileInfo + '画像結合' );
 
             // mergedImageDataの各ピクセルの標高を計算
             // console.time(tileInfo + 'mergedHeights計算');
