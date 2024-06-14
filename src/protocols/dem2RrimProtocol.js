@@ -42,7 +42,7 @@ function dem2RrimProtocol(
             // 色の調整用の出力
             // console.log('pixelLength:', pixelLength, 'terrainScale:', terrainScale, 'zoomLevel:', zoomLevel, 'sigma:', sigma);
 
-            const buffer = 3; // タイルの周囲に追加するピクセル数（+1はsmoothedHeightsのbufferが1あるため）
+            const buffer = 10; // タイルの周囲に追加するピクセル数（+1はsmoothedHeightsのbufferが1あるため）
 
             // 周辺を含む9つのタイル画像のソース
             // index: 0 1 2
@@ -139,45 +139,67 @@ function dem2RrimProtocol(
             // mergedHeightsのデータ数　＝　(mergedWidth) * (mergedWidth)
             // outputImageDataの各ピクセルの標高を平滑化（ウェイトファイルを使用）
             // 曲率の計算用に周辺に1ピクセル分余分に計算する
-
-            // console.time(tileInfo + '平滑化畳み込み計算');
-            const mergedHeightsTensor = tf.keep(tf.tensor(mergedHeights, [mergedWidth, mergedWidth]));
-
-            // カーネルの定義
-            const kernels = [
-                [ 0, 0, 0, 0, 0, 0, 0],
-                [ 0, 0, 0, 0, 0, 0, 0],
-                [ 0, 0, 0, 0, 0, 0, 0],
-                [ 3, 2, 1, 0, 0, 0, 0],
-                [ 0, 0, 0, 0, 0, 0, 0],
-                [ 0, 0, 0, 0, 0, 0, 0],
-                [ 0, 0, 0, 0, 0, 0, 0],
+            
+            
+            // 2次元配列をTensorに変換
+            const inputTensor = tf.tensor2d(mergedHeights, [mergedWidth, mergedWidth]);
+            
+            // 8方向のウィンドウサイズを定義
+            const windowSizes = [
+              [1, 10], // 左
+              [7, 7],  // 左上
+              [10, 1], // 上
+              [7, 7],  // 右上
+              [1, 10], // 右
+              [7, 7],  // 右下
+              [10, 1], // 下
+              [7, 7]   // 左下
             ];
-
-            // 畳み込み処理の実行
-            const convResults = tf.conv2d(mergedHeightsTensor, kernels, [1, 1], 'valid');
-
-            console.log('convResults:', convResults.length);
             
-            // 最大値の計算
-            const maxResults = convResults.map(result => tf.max(result, [1, 2]));
+            // 8方向のウィンドウを抽出
+            const windowedTensors = windowSizes.map(([h, w]) => {
+              return tf.stack(
+                Array.from({ length: inputTensor.shape[0] - h + 1 }, (_, i) =>
+                  Array.from({ length: inputTensor.shape[1] - w + 1 }, (_, j) =>
+                    inputTensor.slice([i, j], [h, w]).arraySync()
+                  )
+                )
+              );
+            });
             
-            // 結果の平均を計算
-            const outputData = tf.mean(tf.stack(maxResults), 0);
+            // 距離の重みを計算
+            const distanceWeights = windowSizes.map(([h, w]) => {
+              const distances = [];
+              for (let i = 0; i < h; i++) {
+                for (let j = 0; j < w; j++) {
+                  const dist = Math.sqrt((i - Math.floor(h / 2)) ** 2 + (j - Math.floor(w / 2)) ** 2);
+                  distances.push(dist);
+                }
+              }
+              return tf.tensor(distances).reshape([h, w]);
+            });
+            
+            // 最大値と最小値を計算
+            const maxValues = windowedTensors.map((tensor, i) => tensor.mul(distanceWeights[i]).max(axis=[2, 3]));
+            const minValues = windowedTensors.map((tensor, i) => tensor.mul(distanceWeights[i]).min(axis=[2, 3]));
+            
+            // 最大値と最小値の平均を計算
+            const avgMax = tf.stack(maxValues).mean(axis=0);
+            const avgMin = tf.stack(minValues).mean(axis=0);
 
-            const ridgeValleyParameter = outputData.dataSync();
+            // 最大値と最小値の差を計算
+            const diff = avgMax.sub(avgMin);
+            
+            // 結果を2次元テンソルに変換
+            const diff2D = diff.reshape([diff.shape[0], diff.shape[1]]);
 
-            console.log('ridgeValleyParameter:', ridgeValleyParameter);
+
 
             //console.log('smoothedHeights:', smoothedHeights);
 
-            // 不要となったテンソルをメモリから解放
-            mergedHeightsTensor.dispose();
 
             // console.timeEnd(tileInfo + '平滑化畳み込み計算');
 
-            // 平滑化した標高から曲率を計算し、CS立体図を作成
-            const curvatures = [];
             // slopesの2次元配列を作成
             const slopes = [];
             
@@ -197,7 +219,7 @@ function dem2RrimProtocol(
             // 1-1 【立体図】の標高レイヤ（黒→白） mergedHeightsから切り出し
             const rrimTensor = tf.tidy(() => {
                 // テンソルの作成
-                const ridgeValleyParameterTensor2D = tf.tensor2d(ridgeValleyParameter, [tileSize, tileSize]);
+                const ridgeValleyParameterTensor2D = diff2D;
                 const slopesTensor2D = tf.tensor1d(slopes, 'float32').reshape([tileSize, tileSize]);
                 
                 // 1-1 【立体図】の標高レイヤ（黒→白）
