@@ -1,6 +1,8 @@
 import { removeProtocol } from 'maplibre-gl';
+import { mapViewParameters } from './stores/MapViewParameters.js'; //リンク用の情報（緯度・経度など）
 import mlcontour from '../node_modules/maplibre-contour/dist/index'; //一部改変
 let terrainControl;
+let popup = null;
 
 // ベースレイヤーの可視性設定
 export function updateBaseLayerVisibility(map, selectedBaseLayer) {
@@ -323,4 +325,128 @@ export function updateTerrainLayers(map, selectedDemSource, demSources, contourI
 
   // Update terrain control
   updateTerrainControl(map, selectedDemSource, demSources, maplibregl);
+}
+
+// リンク用の情報を更新
+export function updateMapViewParameters(map, maplibregl) {
+  const zoom = map.getZoom();
+  const center = map.getCenter();
+  const lng = center.lng;
+  const lat = center.lat;
+  const bearing = map.getBearing();
+  const pitch = map.getPitch();
+
+  const bearing360 = bearing < 0 ? 360 + bearing : bearing; // 0 to 360
+
+  // カメラの高さを計算
+  const cameraAltitudeInPixels = Math.cos(pitch/ 180 * Math.PI) * map.transform.cameraToCenterDistance;
+  
+  // カメラの高さによる地図の中心点のズレを計算
+  const cameraOffsetInPixels = Math.tan(pitch/ 180 * Math.PI) * map.transform.cameraToCenterDistance;
+
+  // map.transform.centerPointは画面中央のピクセル座標（原点：左上、xが横方向、yが縦方向、いずれも正）
+  const cameraPointInPixels = map.transform.centerPoint.add(new maplibregl.Point(0, cameraOffsetInPixels));
+  const cameraPoint = map.transform.pointLocation(cameraPointInPixels);
+
+  const verticalScaleConstant = map.transform.worldSize / (2 * Math.PI * 6378137 * Math.abs(Math.cos(cameraPoint.lat * (Math.PI / 180))));
+  const cameraAltitude = cameraAltitudeInPixels / verticalScaleConstant;
+  const targetAltitude = map.getCameraTargetElevation();
+
+  // 桁数の計算用
+  // https://github.com/maplibre/maplibre-gl-js/blob/863541feb5e1bbc189abbb90fdea7a67ad837588/src/ui/hash.ts#L24
+  const precision = Math.ceil((Math.round(zoom* 100) / 100 * Math.LN2 + Math.log(512 / 360 / 0.5)) / Math.LN10);
+  const m = Math.pow(10, precision);
+
+  mapViewParameters.set({
+    zoom: Math.round(zoom* 100) / 100,
+    lng:  Math.round(lng * m) / m,
+    lat: Math.round(lat * m) / m,
+    bearing: bearing,
+    pitch: pitch,
+    cameraLng: Math.round(cameraPoint.lng * m) / m,
+    cameraLat: Math.round(cameraPoint.lat * m) / m,
+    cameraAltitude: Number(cameraAltitude.toFixed(2)),
+    targetAltitude: Number(targetAltitude.toFixed(2)),
+    bearing360: bearing360.toFixed(2),
+  });
+}
+
+export function flyTo(e,map) {
+  // 右クリック地点を中心に設定
+  map.flyTo({
+    center: e.lngLat,
+    curve: 0,
+    speed: 10,
+  });
+}
+
+export function showPopupLink(e, map, maplibregl, mapViewParameters) {
+  // 既存のポップアップがあれば削除
+  if (popup) {
+      popup.remove();
+  }
+  // モバイル判定
+  let isMobile = window.innerWidth <= 768;
+  popup = new maplibregl.Popup({ offset: [0, -25] })
+  .setLngLat(e.lngLat)
+  .setHTML(`
+      <div class='popup-lng-lat'>
+        緯度: ${mapViewParameters.lat}<br>
+        経度: ${mapViewParameters.lng}<br>
+        ${mapViewParameters.targetAltitude !== 0.00 ? `標高: ${Number(mapViewParameters.targetAltitude).toFixed(1)}` : ''}
+      </div>
+      <table class='map-btn-container'>
+      <tr>
+      <td><a class='map-btn' href='https://map.yahoo.co.jp/place?lat=${mapViewParameters.lat}&lon=${mapViewParameters.lng}&zoom=${mapViewParameters.zoom+1}&maptype=basic' target='_blank'>Y!地図</a></td>
+      <td><a class='map-btn' href='https://map.yahoo.co.jp/place?lat=${mapViewParameters.lat}&lon=${mapViewParameters.lng}&zoom=${mapViewParameters.zoom+1}&maptype=satellite' target='_blank'>Y!写真</a></td>
+      <td><a class='map-btn' href='https://maps.qchizu.xyz/#${mapViewParameters.zoom+1}/${mapViewParameters.lat}/${mapViewParameters.lng}' target='_blank'>通常版</a></td>
+      </tr>
+      <tr>
+      <td><a class='map-btn' href='https://www.google.com/maps/place/${mapViewParameters.lat},${mapViewParameters.lng}/@${mapViewParameters.lat},${mapViewParameters.lng},${mapViewParameters.zoom+1}z' target='_blank'>G地図</a></td>
+      <td><a class='map-btn' href='https://www.google.com/maps/place/${mapViewParameters.lat},${mapViewParameters.lng}/@${mapViewParameters.cameraLat},${mapViewParameters.cameraLng},${mapViewParameters.cameraAltitude}a,35y,${mapViewParameters.bearing360}h,${mapViewParameters.pitch}t/data=!3m1!1e3' target='_blank'>G写真</a></td>
+      <td><a class='map-btn' href='https://www.google.com/maps/@?api=1&map_action=pano&parameters&viewpoint=${mapViewParameters.lat},${mapViewParameters.lng}&heading=${mapViewParameters.bearing}' target='_blank'>ビュー</a></td>
+      </tr>
+      </table>
+      <style>
+          .popup-lng-lat {
+              font-family:  "BIZ UDPGothic", "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
+              font-size: 10pt;
+          }
+          .map-btn-container {
+              width: 100%;
+              font-weight:bold;
+              line-height:${isMobile ? 3 : 1.7};
+          }
+          .map-btn-container td {
+              padding: 5px;
+          }
+          .map-btn-container td a.map-btn {
+              padding: 2px 2px;
+          }
+          .map-btn-container td a.map-btn {
+              display: block;
+              width: 100%;
+              text-align: center;
+              background-color: #e6b422;
+              border: none;
+              border-radius: 4px;
+              text-decoration: none;
+              font-size: 10pt;
+              color: #333;
+              text-shadow:
+              0 -1px 1px #FFF,
+              -1px 0 1px #FFF,
+              1px 0 1px #FFF,
+              0 1px 1px #FFF;
+          }
+      `)
+  .addTo(map);
+}
+
+// ポップアップが存在する場合に削除
+export function removePopupLink() {
+  if (popup) {
+    popup.remove();
+    popup = null;
+  }
 }

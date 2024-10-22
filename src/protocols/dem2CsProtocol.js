@@ -44,6 +44,9 @@ function dem2CsProtocol(
             const kernelRadius = Math.ceil(sigma * 3); // カーネルの半径を計算（μ ± 3σに入るデータの割合は0.997なので、標準偏差の3倍までとした）
             const kernelSize = [kernelRadius * 2 + 1, kernelRadius * 2 + 1]; // ガウシアンカーネルのサイズを定義
 
+            // カーネルのサイズと半径を出力
+            // console.log('kernelSize:', kernelSize, 'kernelRadius:', kernelRadius);
+
             // 色の調整用の出力
             // console.log('pixelLength:', pixelLength, 'terrainScale:', terrainScale, 'zoomLevel:', zoomLevel, 'sigma:', sigma);
 

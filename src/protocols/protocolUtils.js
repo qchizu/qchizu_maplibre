@@ -33,10 +33,14 @@ export function getCalculateHeightFunction(encoding) {
                 const u = 0.01; // 標高分解能
                 if (x < twoToThePowerOf23 && a !== 0) {
                     return x * u;
+                    // 0.1m単位で返す場合
+                    // return parseFloat((x * u).toFixed(1));
                 } else if (x === twoToThePowerOf23 || a === 0) {
                     return -99999;
                 } else {
                     return (x - twoToThePowerOf24) * u;
+                    // 0.1m単位で返す場合
+                    // return parseFloat(((x - twoToThePowerOf24) * u).toFixed(1));
                 }
             };
         case 'mapbox':
