@@ -25,7 +25,10 @@
   import { dem2SlopeProtocol } from "./protocols/dem2SlopeProtocol.js";
 
   //Functions
-  import { updateBaseLayerVisibility, updateOverLayerVisibility, updateTerrainLayers, updateCsLayer } from './utils.js';
+  import { updateBaseLayerVisibility, updateOverLayerVisibility, updateTerrainLayers, updateCsLayer, flyTo, showPopupLink, removePopupLink, updateMapViewParameters} from './utils.js';
+
+  //classes
+  import { CustomControl } from "./mapControls.js";
 
   //定数の定義
   //等高線間隔
@@ -60,7 +63,7 @@
   //dem2SlopeProtocol("slopeMapboxXy", "mapbox","xy");
   //maplibregl.addProtocol("pmtiles",new Protocol().tile);
 
-  // 地図の初期化処理
+  // 地図の初期化処理  
   function initializeMap() {
     map = new maplibregl.Map({
       container: mapContainer,
@@ -79,17 +82,42 @@
     });
   }
 
+
   // 地図のロード完了後の処理
   function onMapLoad() {
     // 各種コントロールの追加
     addControls();
 
+    // sky機能
+    map.setSky({
+        "sky-color": "#199EF3",
+        "sky-horizon-blend": 0.5, //horizon-colorを地平線上どのくらいまでブレンドするか（値が大きいほど地平線上までブレンドする）
+        "horizon-color": "#ffffff",
+        "horizon-fog-blend": 0.5,//遠方をどのくらい霞ませるか（値が大きいほど強く霞む）
+        "fog-color": "#0000ff",
+        "fog-ground-blend": 0.9,//どのくらいの距離まで霞ませるか（値が大きいほど近くまで霞む）
+        "atmosphere-blend": [
+            "interpolate",
+            ["linear"],
+            ["zoom"],
+            0,
+            1,
+            10,
+            1,
+            12,
+            0
+        ]
+    });
+
     //pitchの値をセット
     $pitch = map.getPitch();
+
+    // マウスカーソルのスタイルをパンカーソルから矢印に変更
+    map.getCanvas().style.cursor = 'default';
     
     updateTerrainLayers(map, $selectedDemSource, $demSources, contourInterval, maplibregl, dem2CsProtocol, $CsParameters, $selectedBaseLayer);
     updateBaseLayerVisibility(map, $selectedBaseLayer);
-    updateMapViewParameters();
+    updateMapViewParameters(map, maplibregl);
 
     initialLoadComplete = true;
   }
@@ -122,6 +150,9 @@
       trackUserLocation: true,
       showUserLocation: true
     }));
+    
+    // カスタムコントロールの追加
+    map.addControl(new CustomControl(), 'top-right');
 
     // スケール表示
     map.addControl(
@@ -130,23 +161,6 @@
         unit: 'metric'
       })
     );
-  }
-
-  // リンク用の情報を更新
-  function updateMapViewParameters() {
-    var zoom = map.getZoom();
-    var center = map.getCenter();
-    var lat = center.lat.toFixed(6);
-    var lon = center.lng.toFixed(6);
-    var bearing = map.getBearing();
-    var pitch = map.getPitch();
-    $mapViewParameters = {
-      zoom: zoom,
-      lat: lat,
-      lon: lon,
-      bearing: bearing,
-      pitch: pitch
-    };
   }
 
   onMount(() => {
@@ -174,7 +188,9 @@
     })
 
     // リンク用の情報
-    map.on('moveend', updateMapViewParameters);
+    map.on('moveend', () => {
+      updateMapViewParameters(map, maplibregl);
+    });
 
     map.on('pitchend', () => {
       $pitch = map.getPitch();
@@ -184,6 +200,29 @@
       map.setPitch($pitch);
     }
 
+    // 右クリックで地図を移動して他の地図サービスにリンクするポップアップを表示
+    map.on('contextmenu', function(e){
+      removePopupLink();
+      flyTo(e, map);
+      map.once('moveend', () => {
+        showPopupLink(e, map, maplibregl, $mapViewParameters);
+      });
+    });
+    
+    // 地図のクリックイベントリスナーを追加
+    map.on('click', () => {
+      removePopupLink();
+    });
+    
+    // 地図が移動したときのイベントリスナーを追加
+    map.on('move', () => {
+      removePopupLink();
+    });
+    
+    // 地図がズームされたときのイベントリスナーを追加
+    map.on('zoom', () => {
+      removePopupLink();
+    });
   });
 
   //selectedDemSourceの値を監視してupdateTerrainLayersを実行
@@ -229,7 +268,36 @@
 </script>
 
 <div bind:this={mapContainer} style="width: 100%; height: 100%;"></div>
-
+<div class="crosshair"></div> <!-- 十字マーク  --> 
 <div class="sidebar">
   <Sidebar bind:sidebarExternalToggle={sidebarExternalToggle} />
 </div>
+
+<style>
+.crosshair {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+}
+.crosshair::before, .crosshair::after {
+    content: '';
+    position: absolute;
+    background: rgba(255, 0, 0, 0.5);
+}
+.crosshair::before {
+    width: 2px;
+    height: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+}
+.crosshair::after {
+    width: 100%;
+    height: 2px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+</style>

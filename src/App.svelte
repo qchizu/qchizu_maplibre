@@ -7,7 +7,7 @@
   $: isSmallScreen = window.innerWidth <= 400;
 
   function openStandardEdition() {
-    const url = 'https://maps.qchizu.xyz/#' + ($mapViewParameters.zoom + 1) + '/' + $mapViewParameters.lat + '/' + $mapViewParameters.lon;
+    const url = 'https://maps.qchizu.xyz/#' + ($mapViewParameters.zoom + 1) + '/' + $mapViewParameters.lat + '/' + $mapViewParameters.lng;
     window.open(url, '_blank');
   }
 </script>

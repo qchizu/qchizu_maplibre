@@ -7,7 +7,7 @@ function dem2CsProtocol(
     encoding = 'gsj', //今度の作業　gsj→numpngに変更
     xyOrder = 'xy', // タイルのURLにおけるXYの順序 {z}/{x}/{y}.pngの場合は'xy'、{z}/{y}/{x}.pngの場合は'yx'
     terrainScale = 1, // 表現する地形の規模の調整
-    redAndBlueIntensity = 1,// 赤・青の濃度　今後の作業　調整できるようにする
+    redAndBlueIntensity = 1,// 赤・青の濃度の調整
     // 今後の作業　出力図の種類も設定できるようにする
 ) {
     // エンコーディングに応じて適切な標高計算関数を取得
@@ -31,18 +31,25 @@ function dem2CsProtocol(
                 tileY = parseInt(match[2], 10);
             }
 
-            // console.time用の名前
+            // // console.time用の名前
             // const tileInfo = tileX + '-' + tileY + '-' + zoomLevel;
-            // console.time(tileInfo + '画像読み込み、ガウシアンカーネル作成' );
+            // console.time(tileInfo + 'ガウシアンカーネル作成' );
 
             const tileSize = 256; // タイルのサイズ（ピクセル）
             const pixelLength = calculatePixelResolution(tileSize, zoomLevel, tileY); // 1ピクセルの実距離（メートル）
 
             // ガウシアンカーネル作成
             const minimumSigma = 1.6; // ガウシアンカーネルの最小標準偏差
-            const sigma =  Math.max(3 / pixelLength, minimumSigma) * terrainScale;  // ガウシアンカーネルの標準偏差を計算(1mメッシュの場合、3m)
+            const maximumSigma = 7; // ガウシアンカーネルの最大標準偏差（ZL19で計算量が多くなり動作に支障が出るため設定→計算を効率化すれば外すこと）
+            const sigma =  Math.min(Math.max(3 / pixelLength, minimumSigma), maximumSigma) * terrainScale;  // ガウシアンカーネルの標準偏差を計算(1mメッシュの場合、3m)      
             const kernelRadius = Math.ceil(sigma * 3); // カーネルの半径を計算（μ ± 3σに入るデータの割合は0.997なので、標準偏差の3倍までとした）
             const kernelSize = [kernelRadius * 2 + 1, kernelRadius * 2 + 1]; // ガウシアンカーネルのサイズを定義
+
+            // sigmaの出力
+            // console.log('sigma:', sigma);
+
+            // カーネルのサイズと半径を出力
+            // console.log('kernelSize:', kernelSize, 'kernelRadius:', kernelRadius);
 
             // 色の調整用の出力
             // console.log('pixelLength:', pixelLength, 'terrainScale:', terrainScale, 'zoomLevel:', zoomLevel, 'sigma:', sigma);
@@ -62,6 +69,9 @@ function dem2CsProtocol(
             });
 
             const buffer = kernelRadius + 1; // タイルの周囲に追加するピクセル数（+1はsmoothedHeightsのbufferが1あるため）
+
+            // console.timeEnd(tileInfo + 'ガウシアンカーネル作成' );
+            // console.time(tileInfo + '画像読み込み')
 
             // 周辺を含む9つのタイル画像のソース
             // index: 0 1 2
@@ -125,6 +135,9 @@ function dem2CsProtocol(
                 }
             });
 
+            // console.timeEnd(tileInfo + '画像読み込み')
+            // console.time(tileInfo + '画像結合' );
+
             // すべてのタイルが読み込まれたら処理を続行
             const images = await Promise.all(imagePromises);
             images.forEach(({ img, index }) => {
@@ -141,7 +154,7 @@ function dem2CsProtocol(
             const mergedWidth = tileSize + buffer * 2;
             const mergedImageData = mergedCtx.getImageData(0, 0, mergedWidth, mergedWidth);
 
-            // console.timeEnd(tileInfo + '画像読み込み、ガウシアンカーネル作成' );
+            // console.timeEnd(tileInfo + '画像結合' );
 
             // mergedImageDataの各ピクセルの標高を計算
             // console.time(tileInfo + 'mergedHeights計算');
