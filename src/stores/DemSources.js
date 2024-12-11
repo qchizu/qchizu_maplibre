@@ -1,5 +1,13 @@
 import { writable } from 'svelte/store';
 export const demSources = writable({
+/*         "localhost": {
+            name: "localhost",
+            tiles: ['http://localhost:8000/{z}/{x}/{y}.png'],
+            encoding: "gsj",
+            attribution: 'Q地図タイル',
+            maxzoom: 19,
+            tileSize: 256,
+        }, */
         "qchizuInt": {
             name: "Q地図統合(-ZL19)",
             tiles: ['https://mapdata.qchizu2.xyz/03_dem/51_int/all_9999/int_01/{z}/{x}/{y}.png'],
@@ -40,7 +48,15 @@ export const demSources = writable({
             maxzoom: 15,
             tileSize: 256,
         },
-        "gsjMixed": {
+        "gsjMixed19": {
+            name: "産総研統合(-ZL19)",
+            tiles: ['https://tiles.gsj.jp/tiles/elev/land/{z}/{y}/{x}.png'],
+            encoding: "gsj",
+            attribution: '<a href="https://gbank.gsj.jp/seamless/elev/" target="_blank">産総研地質調査総合センター</a>',
+            maxzoom: 19,
+            tileSize: 256,
+        },
+        "gsjMixed17": {
             name: "産総研統合(-ZL17)",
             tiles: ['https://tiles.gsj.jp/tiles/elev/land/{z}/{y}/{x}.png'],
             encoding: "gsj",

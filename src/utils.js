@@ -11,6 +11,7 @@ export function updateBaseLayerVisibility(map, selectedBaseLayer) {
   map.setLayoutProperty('gsi_seamlessphoto', 'visibility', selectedBaseLayer === 'gsi_seamlessphoto' ? 'visible' : 'none');
   map.setLayoutProperty('open_street_map', 'visibility', selectedBaseLayer === 'open_street_map' ? 'visible' : 'none');
   map.setLayoutProperty('relief', 'visibility', selectedBaseLayer === 'relief' ? 'visible' : 'none');
+  map.setLayoutProperty('slope-color', 'visibility', selectedBaseLayer === 'slope-color' ? 'visible' : 'none');  
   map.setLayoutProperty('cs', 'visibility', selectedBaseLayer === 'cs' ? 'visible' : 'none');
   map.setLayoutProperty('white-background', 'visibility', selectedBaseLayer === 'white-background' ? 'visible' : 'none');
   map.setLayoutProperty('p17_ishikawa_f_01', 'visibility', selectedBaseLayer === 'p17_ishikawa_f_01' ? 'visible' : 'none');
@@ -50,6 +51,35 @@ function updateReliefLayer(map, selectedDemSource, demSources) {
     id: "relief",
     type: "raster",
     source: "reliefSource",
+    layout: {
+      visibility: 'none'
+    },
+  });
+}
+
+// 傾斜区分図の更新
+function updateSlopeColorLayer(map, selectedDemSource, demSources) {
+  if (map.getLayer("slope-color")) {
+    map.removeLayer("slope-color");
+  }
+  if (map.getSource("slopeColorSource")) {
+    map.removeSource("slopeColorSource");
+  }
+
+  const slopeColorTilesUrl = getTilesUrl(selectedDemSource, demSources, "slope-color");
+
+  map.addSource("slopeColorSource", {
+    "type": "raster",
+    "tiles": slopeColorTilesUrl,
+    "attribution": demSources[selectedDemSource]["attribution"],
+    "maxzoom": demSources[selectedDemSource]["maxzoom"],
+    "tileSize": demSources[selectedDemSource]["tileSize"],
+  });
+
+  map.addLayer({
+    id: "slope-color",
+    type: "raster",
+    source: "slopeColorSource",
     layout: {
       visibility: 'none'
     },
@@ -273,8 +303,12 @@ function getTilesUrl(selectedDemSource, demSources, layerType) {
       "mapbox": url => "reliefMapbox://" + url
     },
     "slope": {
-      "gsj": url => "slopeGsj" + (demSources[selectedDemSource]["tiles"][0].includes('{x}/{y}') ? 'Xy' : 'Yx') + "://" + url,
-      "mapbox": url => "slopeMapbox" + (demSources[selectedDemSource]["tiles"][0].includes('{x}/{y}') ? 'Xy' : 'Yx') + "://" + url
+      "gsj": url => "slopeGsj" + (demSources[selectedDemSource]["tiles"][0].includes('{x}/{y}') ? 'Xy' : 'Yx') + "Gray" + "://" + url,
+      "mapbox": url => "slopeMapbox" + (demSources[selectedDemSource]["tiles"][0].includes('{x}/{y}') ? 'Xy' : 'Yx') + "Gray" + "://" + url
+    },
+    "slope-color": {
+      "gsj": url => "slopeGsj" + (demSources[selectedDemSource]["tiles"][0].includes('{x}/{y}') ? 'Xy' : 'Yx') + "Color" + "://" + url,
+      "mapbox": url => "slopeMapbox" + (demSources[selectedDemSource]["tiles"][0].includes('{x}/{y}') ? 'Xy' : 'Yx') + "Color" + "://" + url
     },
     "cs": {
       "gsj": url => "csGsj" + (demSources[selectedDemSource]["tiles"][0].includes('{x}/{y}') ? 'Xy' : 'Yx') + "://" + url,
@@ -310,6 +344,9 @@ export function updateTerrainLayers(map, selectedDemSource, demSources, contourI
 
   // Update relief layer
   updateReliefLayer(map, selectedDemSource, demSources);
+
+  // Update slope color layer
+  updateSlopeColorLayer(map, selectedDemSource, demSources);
 
   // Update cs layer
   updateCsLayer(map, selectedDemSource, demSources, dem2CsProtocol, csParameters, selectedBaseLayer); // 今後の作業　他の関数もselectedBaseLayerを引数に追加

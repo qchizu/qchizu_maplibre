@@ -58,8 +58,10 @@
   //dem2ReliefProtocol('reliefMapbox',"mapbox",true);
   dem2CsProtocol("csGsjXy", "gsj", "xy");
   dem2CsProtocol("csGsjYx", "gsj", "yx");
-  dem2SlopeProtocol("slopeGsjXy", "gsj" ,"xy");
-  dem2SlopeProtocol("slopeGsjYx", "gsj" ,"yx");
+  dem2SlopeProtocol("slopeGsjXyColor", "gsj" ,"xy" ,"color");
+  dem2SlopeProtocol("slopeGsjYxColor", "gsj" ,"yx" ,"color");
+  dem2SlopeProtocol("slopeGsjXyGray", "gsj" ,"xy" ,"gray");
+  dem2SlopeProtocol("slopeGsjYxGray", "gsj" ,"yx" ,"gray");  
   //dem2SlopeProtocol("slopeMapboxXy", "mapbox","xy");
   //maplibregl.addProtocol("pmtiles",new Protocol().tile);
 

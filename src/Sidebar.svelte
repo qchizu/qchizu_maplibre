@@ -14,6 +14,7 @@
         { id: 'gsi_seamlessphoto', label: '写真', showSettings: false },
         { id: 'open_street_map', label: 'OpenStreetMap', showSettings: false },
         { id: 'relief', label: '段彩図◆', showSettings: false },
+        { id: 'slope-color', label: '傾斜区分図◆', showSettings: false },
         { id: 'cs', label: 'CS立体図(試験版)◆', showSettings: true },
         { id: 'white-background', label: '背景なし', showSettings: false },
         { id: 'p17_ishikawa_f_01', label: '能登写真(2020,2022)', showSettings: false },
