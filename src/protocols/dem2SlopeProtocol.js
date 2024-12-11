@@ -4,10 +4,32 @@ import { calculateTilePosition, getCalculateHeightFunction, calculatePixelResolu
 function dem2SlopeProtocol(
     protocol = 'slope', 
     encoding = 'gsj',  //  'gsj', 'mapbox', 'terrarium'
-    xyOrder = 'xy'
+    xyOrder = 'xy',
+    colorMode = 'color' // 'color', 'gray'
 ) {
     // エンコーディングに応じて適切な標高計算関数を取得
     const calculateHeight = getCalculateHeightFunction(encoding);
+
+    // カラーモードに応じた色の計算関数を定義
+    const colorProcessor = {
+        color: (slope) => {
+            if (slope >= 0 && slope < 15) {
+                return [0, 0, 255, 255];  // 青
+            } else if (slope >= 15 && slope < 30) {
+                return [51, 194, 255, 255];  // 水色
+            } else if (slope >= 30 && slope < 40) {
+                return [182, 255, 143, 255];  // 緑
+            } else if (slope >= 40 && slope < 45) {
+                return [255, 200, 0, 255];  // 黄
+            } else {
+                return [255, 0, 0, 255];  // 赤
+            }
+        },
+        gray: (slope) => {
+            const alpha = Math.min(Math.max(slope * 3, 0), 255);
+            return [0, 0, 0, alpha];
+        }
+    };
 
     const loadFn = async (params, abortController) => {
         // URLからズームレベル、タイルX、タイルYを抽出
@@ -107,6 +129,9 @@ function dem2SlopeProtocol(
                 }
             });
 
+            // 選択されたカラーモードの処理関数を取得
+            const processColor = colorProcessor[colorMode];
+
             // 傾斜と色を計算
             const mergedImageData = mergedCtx.getImageData(0, 0, tileSize + buffer * 2, tileSize + buffer * 2);
             const mergedWidth = tileSize + buffer * 2;
@@ -121,12 +146,13 @@ function dem2SlopeProtocol(
                     let H01 = calculateHeight(mergedImageData.data[mergedIndex + 4], mergedImageData.data[mergedIndex + 5], mergedImageData.data[mergedIndex + 6], mergedImageData.data[mergedIndex + 7]);
                     let H10 = calculateHeight(mergedImageData.data[mergedIndex + mergedWidth * 4], mergedImageData.data[mergedIndex + mergedWidth * 4 + 1], mergedImageData.data[mergedIndex + mergedWidth * 4 + 2], mergedImageData.data[mergedIndex + mergedWidth * 4 + 3]);
                     let slope = calculateSlope(H00, H01, H10, pixelLength);
-                    let alpha = Math.min(Math.max(slope * 3, 0), 255); // alpha値は0から255の範囲に収める
 
-                    outputImageData.data[outputIndex] = 0;
-                    outputImageData.data[outputIndex + 1] = 0;
-                    outputImageData.data[outputIndex + 2] = 0;
-                    outputImageData.data[outputIndex + 3] = alpha;
+                    // カラーモードに応じた色を取得して適用
+                    const [r, g, b, a] = processColor(slope);
+                    outputImageData.data[outputIndex] = r;
+                    outputImageData.data[outputIndex + 1] = g;
+                    outputImageData.data[outputIndex + 2] = b;
+                    outputImageData.data[outputIndex + 3] = a;
                 }
             };
 
