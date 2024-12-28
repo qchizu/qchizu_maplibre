@@ -8,11 +8,19 @@ export const demSources = writable({
             maxzoom: 19,
             tileSize: 256,
         }, */
-        "qchizuInt": {
-            name: "Q地図統合(-ZL19)",
-            tiles: ['https://mapdata.qchizu2.xyz/03_dem/51_int/all_9999/int_01/{z}/{x}/{y}.png'],
+        "gsjLand17": {
+            name: "産総研陸域(-ZL17)",
+            tiles: ['https://tiles.gsj.jp/tiles/elev/land/{z}/{y}/{x}.png'],
             encoding: "gsj",
-            attribution: '<a href="https://www.geospatial.jp/ckan/dataset/qchizu_94dem_int" target="_blank">Q地図タイル</a>',
+            attribution: '<a href="https://gbank.gsj.jp/seamless/elev/" target="_blank">産総研地質調査総合センター</a>',
+            maxzoom: 17,
+            tileSize: 256,
+        },
+        "gsjLand19": {
+            name: "産総研陸域(-ZL19)",
+            tiles: ['https://tiles.gsj.jp/tiles/elev/land/{z}/{y}/{x}.png'],
+            encoding: "gsj",
+            attribution: '<a href="https://gbank.gsj.jp/seamless/elev/" target="_blank">産総研地質調査総合センター</a>',
             maxzoom: 19,
             tileSize: 256,
         },
@@ -46,22 +54,6 @@ export const demSources = writable({
             encoding: "gsj",
             attribution: '<a href="https://www.geospatial.jp/ckan/dataset/qchizu_94dem_int" target="_blank">Q地図タイル</a>',
             maxzoom: 15,
-            tileSize: 256,
-        },
-        "gsjMixed19": {
-            name: "産総研統合(-ZL19)",
-            tiles: ['https://tiles.gsj.jp/tiles/elev/land/{z}/{y}/{x}.png'],
-            encoding: "gsj",
-            attribution: '<a href="https://gbank.gsj.jp/seamless/elev/" target="_blank">産総研地質調査総合センター</a>',
-            maxzoom: 19,
-            tileSize: 256,
-        },
-        "gsjMixed17": {
-            name: "産総研統合(-ZL17)",
-            tiles: ['https://tiles.gsj.jp/tiles/elev/land/{z}/{y}/{x}.png'],
-            encoding: "gsj",
-            attribution: '<a href="https://gbank.gsj.jp/seamless/elev/" target="_blank">産総研地質調査総合センター</a>',
-            maxzoom: 17,
             tileSize: 256,
         },
         "qchizu1A": {
@@ -104,12 +96,12 @@ export const demSources = writable({
             maxzoom: 15,
             tileSize: 256,
         },
-        "gsiNotoDsm": {
-            name: "能登DSM(-ZL15)",
-            tiles: ['https://cyberjapandata.gsi.go.jp/xyz/20240102noto_1mDSM/{z}/{x}/{y}.png'],
+        "qchizuNoto2024": {
+            name: "能登2024(-ZL18)",
+            tiles: ['https://mapdata.qchizu2.xyz/03_dem/59_rinya/noto/2024_0pt5_01/{z}/{x}/{y}.png'],
             encoding: "gsj",
-            attribution: '<a href="https://www.gsi.go.jp/johofukyu/johofukyu240122_00001.html" target="_blank">国土地理院</a>',
-            maxzoom: 15,
+            attribution: '<a href="https://www.geospatial.jp/ckan/dataset/qchizu_94dem_17p_ishikawa_f" target="_blank">Ｑ地図タイル</a>(<a href="https://www.geospatial.jp/ckan/dataset/2024noto_dem" target="_blank">林野庁・国土地理院</a>)',
+            maxzoom: 18,
             tileSize: 256,
         },
         "qchizuNotoE": {
@@ -128,4 +120,12 @@ export const demSources = writable({
             maxzoom: 17,
             tileSize: 256,
         },
+        "gsiNotoDsm": {
+            name: "能登DSM(-ZL15)",
+            tiles: ['https://cyberjapandata.gsi.go.jp/xyz/20240102noto_1mDSM/{z}/{x}/{y}.png'],
+            encoding: "gsj",
+            attribution: '<a href="https://www.gsi.go.jp/johofukyu/johofukyu240122_00001.html" target="_blank">国土地理院</a>',
+            maxzoom: 15,
+            tileSize: 256,
+        }
 });

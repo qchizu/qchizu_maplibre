@@ -17,6 +17,7 @@ export function updateBaseLayerVisibility(map, selectedBaseLayer) {
   map.setLayoutProperty('p17_ishikawa_f_01', 'visibility', selectedBaseLayer === 'p17_ishikawa_f_01' ? 'visible' : 'none');
   map.setLayoutProperty('ishikawa_cs', 'visibility', selectedBaseLayer === 'ishikawa_cs' ? 'visible' : 'none');
   map.setLayoutProperty('ishikawa_rrim', 'visibility', selectedBaseLayer === 'ishikawa_rrim' ? 'visible' : 'none');
+  map.setLayoutProperty('ishikawa_photo_2024', 'visibility', selectedBaseLayer === 'ishikawa_photo_2024' ? 'visible' : 'none');
 }
 
 // オーバーレイの可視性設定
@@ -335,7 +336,7 @@ function setLayerVisibility(map, layerId, visible) {
 }
 
 // 定数
-const HILLSHADE_EXAGGERATION = 0.4;
+const HILLSHADE_EXAGGERATION = 1;
 const HILLSHADE_HIGHLIGHT_COLOR = "rgb(255, 255, 255)";
 const CONTOUR_LINE_WIDTH_FACTOR = 2;
 

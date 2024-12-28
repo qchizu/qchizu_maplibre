@@ -67,4 +67,12 @@ export const mapLayers = readable([
             visibility: "none",
         },
     },
+    {
+        id: "ishikawa_photo_2024",
+        type: "raster",
+        source: "ishikawa_photo_2024",
+        layout: {
+            visibility: "none",
+        },
+    },
 ])

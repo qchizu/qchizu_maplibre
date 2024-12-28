@@ -62,7 +62,7 @@
   dem2SlopeProtocol("slopeGsjYxColor", "gsj" ,"yx" ,"color");
   dem2SlopeProtocol("slopeGsjXyGray", "gsj" ,"xy" ,"gray");
   dem2SlopeProtocol("slopeGsjYxGray", "gsj" ,"yx" ,"gray");  
-  //dem2SlopeProtocol("slopeMapboxXy", "mapbox","xy");
+  //dem2SlopeProtocol("slopeMapboxXyGray", "mapbox","xy","gray");
   //maplibregl.addProtocol("pmtiles",new Protocol().tile);
 
   // 地図の初期化処理  
