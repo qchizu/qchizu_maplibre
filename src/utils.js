@@ -165,6 +165,7 @@ function updateHillshadeLayer(map, selectedDemSource, demSources) {
   map.addSource("hillshadeSource", {
     "type": "raster-dem",
     "tiles": hillshadeTilesUrl,
+    "encoding": "terrarium",
     "attribution": demSources[selectedDemSource]["attribution"],
     "maxzoom": demSources[selectedDemSource]["maxzoom"],
     "tileSize": demSources[selectedDemSource]["tileSize"],
@@ -275,6 +276,7 @@ function updateTerrainControl(map, selectedDemSource, demSources, maplibregl) {
   map.addSource("terrainSource", {
     "type": "raster-dem",
     "tiles": terrainTilesUrl,
+    "encoding": "terrarium", //gsj以外に対応させるには、変数で管理する必要がある
     "attribution": demSources[selectedDemSource]["attribution"],
     "maxzoom": demSources[selectedDemSource]["maxzoom"],
     "tileSize": demSources[selectedDemSource]["tileSize"],
