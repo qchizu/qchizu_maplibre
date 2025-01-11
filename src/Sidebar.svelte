@@ -18,6 +18,7 @@
         { id: 'cs', label: 'CS立体図(試験版)◆', showSettings: true },
         { id: 'white-background', label: '背景なし', showSettings: false },
         { id: 'p17_ishikawa_f_01', label: '能登写真(2020,2022)', showSettings: false },
+        { id: 'ishikawa_photo_2024', label: '能登写真(2024)', showSettings: false },
         { id: 'ishikawa_cs', label: '能登CS立体図', showSettings: false },
         { id: 'ishikawa_rrim', label: '能登赤色立体地図', showSettings: false },
     ];

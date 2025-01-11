@@ -17,6 +17,7 @@ export function updateBaseLayerVisibility(map, selectedBaseLayer) {
   map.setLayoutProperty('p17_ishikawa_f_01', 'visibility', selectedBaseLayer === 'p17_ishikawa_f_01' ? 'visible' : 'none');
   map.setLayoutProperty('ishikawa_cs', 'visibility', selectedBaseLayer === 'ishikawa_cs' ? 'visible' : 'none');
   map.setLayoutProperty('ishikawa_rrim', 'visibility', selectedBaseLayer === 'ishikawa_rrim' ? 'visible' : 'none');
+  map.setLayoutProperty('ishikawa_photo_2024', 'visibility', selectedBaseLayer === 'ishikawa_photo_2024' ? 'visible' : 'none');
 }
 
 // オーバーレイの可視性設定
@@ -164,6 +165,7 @@ function updateHillshadeLayer(map, selectedDemSource, demSources) {
   map.addSource("hillshadeSource", {
     "type": "raster-dem",
     "tiles": hillshadeTilesUrl,
+    "encoding": "terrarium",
     "attribution": demSources[selectedDemSource]["attribution"],
     "maxzoom": demSources[selectedDemSource]["maxzoom"],
     "tileSize": demSources[selectedDemSource]["tileSize"],
@@ -274,6 +276,7 @@ function updateTerrainControl(map, selectedDemSource, demSources, maplibregl) {
   map.addSource("terrainSource", {
     "type": "raster-dem",
     "tiles": terrainTilesUrl,
+    "encoding": "terrarium", //gsj以外に対応させるには、変数で管理する必要がある
     "attribution": demSources[selectedDemSource]["attribution"],
     "maxzoom": demSources[selectedDemSource]["maxzoom"],
     "tileSize": demSources[selectedDemSource]["tileSize"],
@@ -335,7 +338,7 @@ function setLayerVisibility(map, layerId, visible) {
 }
 
 // 定数
-const HILLSHADE_EXAGGERATION = 0.4;
+const HILLSHADE_EXAGGERATION = 1;
 const HILLSHADE_HIGHLIGHT_COLOR = "rgb(255, 255, 255)";
 const CONTOUR_LINE_WIDTH_FACTOR = 2;
 

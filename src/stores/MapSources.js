@@ -49,4 +49,11 @@ export const mapSources = readable({
         tileSize: 256,
         maxzoom: 18,
     },
+    ishikawa_photo_2024: {
+        type: "raster",
+        tiles: ["https://cyberjapandata.gsi.go.jp/xyz/20240102noto_0405_0426do/{z}/{x}/{y}.png"],
+        attribution: '<a target="_blank" href="https://maps.gsi.go.jp/development/ichiran.html#t20240102noto_0405_0426do">地理院タイル</a>',
+        tileSize: 256,
+        maxzoom: 18,
+    }
 });
