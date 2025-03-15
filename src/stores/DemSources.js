@@ -1,4 +1,5 @@
 import { writable } from 'svelte/store';
+
 export const demSources = writable({
 /*         "localhost": {
             name: "localhost",
@@ -8,6 +9,15 @@ export const demSources = writable({
             maxzoom: 19,
             tileSize: 256,
         }, */
+        "gaibu": {
+            name: "【外部タイル】",
+            isExternal: true,
+            tiles: [''],
+            encoding: "gsj",
+            attribution: '外部タイル',
+            maxzoom: 18,
+            tileSize: 256
+        },
         "gsjLand19": {
             name: "産総研陸域(-ZL19)",
             tiles: ['https://tiles.gsj.jp/tiles/elev/land/{z}/{y}/{x}.png'],

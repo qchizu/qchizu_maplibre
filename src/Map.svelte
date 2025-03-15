@@ -55,14 +55,16 @@
   // addProtocolを設定
   demTranscoderProtocol("gsj", "gsj");
   dem2ReliefProtocol('reliefGsj', "gsj", true);
-  //dem2ReliefProtocol('reliefMapbox',"mapbox",true);
+  dem2ReliefProtocol('reliefMapbox',"mapbox",true);
   dem2CsProtocol("csGsjXy", "gsj", "xy");
   dem2CsProtocol("csGsjYx", "gsj", "yx");
+  dem2CsProtocol("csMapboxXy", "mapbox", "xy");
   dem2SlopeProtocol("slopeGsjXyColor", "gsj" ,"xy" ,"color");
   dem2SlopeProtocol("slopeGsjYxColor", "gsj" ,"yx" ,"color");
   dem2SlopeProtocol("slopeGsjXyGray", "gsj" ,"xy" ,"gray");
   dem2SlopeProtocol("slopeGsjYxGray", "gsj" ,"yx" ,"gray");  
-  //dem2SlopeProtocol("slopeMapboxXyGray", "mapbox","xy","gray");
+  dem2SlopeProtocol("slopeMapboxXyColor", "mapbox" ,"xy" ,"color");
+  dem2SlopeProtocol("slopeMapboxXyGray", "mapbox" ,"xy" ,"gray"); 
   //maplibregl.addProtocol("pmtiles",new Protocol().tile);
 
   // 地図の初期化処理  
