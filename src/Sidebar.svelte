@@ -1,6 +1,7 @@
 <script>
     import Button from './Button.svelte';
     import { demSources } from './stores/DemSources.js';
+    import { externalTileConfig, updateExternalTileSource } from './stores/ExternalTileConfig.js';
     import { selectedBaseLayer } from './stores/SelectedBaseLayer.js';
     import { selectedOverLayers } from './stores/SelectedOverLayers';
     import { selectedDemSource } from './stores/SelectedDemSource.js';
@@ -58,6 +59,30 @@
             return Array.from(updated);
         });
     }
+
+    // 外部タイルの設定が表示されているかどうか
+    let showExternalTileSettings = false;
+
+    // 外部タイルの設定を更新する
+    function handleExternalTileUpdate() {
+        updateExternalTileSource(demSources);
+    }
+
+    // 選択したDEMソースが外部タイルかどうかを監視
+    $: {
+        if ($selectedDemSource === 'gaibu') {
+            showExternalTileSettings = true;
+        } else {
+            showExternalTileSettings = false;
+        }
+    }
+
+    // エンコーディングの選択肢
+    const encodingOptions = [
+        { value: 'gsj', label: '数値PNGタイル' },
+        { value: 'mapbox', label: 'Mapbox' },
+        { value: 'terrarium', label: 'Terrarium' }
+    ];
 </script>
     
 <div class={sidebarVisible ? 'sidebar' : 'sidebar sidebar-hidden'}>
@@ -77,6 +102,77 @@
             <div class="note">
                 ◆印の描画に反映
             </div>
+
+            <!-- 外部タイル設定フォーム -->
+            {#if showExternalTileSettings}
+                <div class="external-tile-settings">
+                    <div class="settings-subsection">
+                        <h2 class="settings-subtitle">外部タイル設定</h2>
+                        
+                        <div class="settings-item">
+                            <label for="tileUrl">タイルURL（必須）:</label>
+                            <textarea 
+                                id="tileUrl" 
+                                bind:value={$externalTileConfig.tiles} 
+                                placeholder="https://example.com/tiles/&#123;z&#125;/&#123;x&#125;/&#123;y&#125;.png"
+                                rows="5"
+                                class="resize-vertical"
+                            ></textarea>
+                        </div>
+                        
+                        <div class="settings-item">
+                            <label for="encoding">エンコーディング:</label>
+                            <select id="encoding" bind:value={$externalTileConfig.encoding}>
+                                {#each encodingOptions as option}
+                                    <option value={option.value}>{option.label}</option>
+                                {/each}
+                            </select>
+                        </div>
+                        
+                        <div class="settings-item">
+                            <label for="attribution">出典表示:</label>
+                            <textarea 
+                                id="attribution" 
+                                bind:value={$externalTileConfig.attribution} 
+                                placeholder="データ提供元"
+                                rows="1"
+                                class="resize-vertical"
+                            ></textarea>
+                        </div>
+                        
+                        <div class="settings-item">
+                            <label for="maxzoom">最大ズームレベル:</label>
+                            <input 
+                                id="maxzoom" 
+                                type="number" 
+                                bind:value={$externalTileConfig.maxzoom} 
+                                min="0" 
+                                max="24"
+                            />
+                        </div>
+                        
+                        <div class="settings-item">
+                            <label for="tileSize">タイルサイズ:</label>
+                            <input 
+                                id="tileSize" 
+                                type="number" 
+                                bind:value={$externalTileConfig.tileSize} 
+                                min="256" 
+                                max="512" 
+                                step="256"
+                            />
+                        </div>
+                        
+                        <div class="settings-item">
+                            <Button 
+                                text="設定を適用" 
+                                title="外部タイルの設定を適用します" 
+                                onClick={handleExternalTileUpdate} 
+                            />
+                        </div>
+                    </div>
+                </div>
+            {/if}
         </div>
     </div>
 
@@ -249,6 +345,14 @@
         padding: 0 10px;
     }
 
+    .settings-subtitle {
+        font-size: 14px;
+        font-weight: bold;
+        color: #333;
+        margin: 10px 0 5px 0;
+        border-bottom: 1px solid #ddd;
+    }
+
     .margin {
         margin: 5px 10px;
     }
@@ -302,7 +406,34 @@
     .choice-elements-group label span {
         flex: 1;
     }
+    
+    /* 外部タイル設定用のスタイル */
+    .external-tile-settings {
+        margin-top: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 3px;
+        background-color: #f9f9f9;
+        font-size: 13px;
+    }
 
+    .settings-item textarea {
+        width: 120px;
+        padding: 3px;
+        font-size: 12px;
+        border: 1px solid #ccc;
+        border-radius: 3px;
+        min-height: 34px;
+    }
+
+    .settings-item {
+        margin-bottom: 6px;
+    }
+
+    .resize-vertical {
+        resize: vertical; /* 垂直方向のリサイズを許可 */
+        overflow: auto;   /* スクロールバーを必要に応じて表示 */
+    }
 
     .pc-only {
         display: none; /* デフォルトでは非表示 */

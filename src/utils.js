@@ -162,10 +162,16 @@ function updateHillshadeLayer(map, selectedDemSource, demSources) {
 
   const hillshadeTilesUrl = getTilesUrl(selectedDemSource, demSources, "hillshade");
 
+  // encodingがgsjの場合、demTranscoderによりterrarium形式に変換されるため、terrariumとする
+  let encoding = demSources[selectedDemSource]["encoding"];
+  if (encoding === "gsj") {
+    encoding = "terrarium";
+  }
+
   map.addSource("hillshadeSource", {
     "type": "raster-dem",
     "tiles": hillshadeTilesUrl,
-    "encoding": "terrarium",
+    "encoding": encoding,
     "attribution": demSources[selectedDemSource]["attribution"],
     "maxzoom": demSources[selectedDemSource]["maxzoom"],
     "tileSize": demSources[selectedDemSource]["tileSize"],
@@ -273,10 +279,16 @@ function updateTerrainControl(map, selectedDemSource, demSources, maplibregl) {
 
   const terrainTilesUrl = getTilesUrl(selectedDemSource, demSources, "terrain");
 
+  // encodingがgsjの場合、demTranscoderによりterrarium形式に変換されるため、terrariumとする
+  let encoding = demSources[selectedDemSource]["encoding"];
+  if (encoding === "gsj") {
+    encoding = "terrarium";
+  }
+
   map.addSource("terrainSource", {
     "type": "raster-dem",
     "tiles": terrainTilesUrl,
-    "encoding": "terrarium", //gsj以外に対応させるには、変数で管理する必要がある
+    "encoding": encoding,
     "attribution": demSources[selectedDemSource]["attribution"],
     "maxzoom": demSources[selectedDemSource]["maxzoom"],
     "tileSize": demSources[selectedDemSource]["tileSize"],
