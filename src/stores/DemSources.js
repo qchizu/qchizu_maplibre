@@ -36,9 +36,9 @@ export const demSources = writable({
         },
         "qchizu1A": {
             name: "Q地図1A(-ZL17)",
-            tiles: ['https://mapdata.qchizu2.xyz/03_dem/52_gsi/all_9999/1_01/{z}/{x}/{y}.png'],
+            tiles: ['https://mapdata.qchizu.xyz/03_dem/52_gsi/all_2025/1_01/{z}/{x}/{y}.png'],
             encoding: "gsj",
-            attribution: '<a href="https://www.geospatial.jp/ckan/dataset/qchizu_94dem_99gsi" target="_blank">Q地図タイル(測量法に基づく国土地理院長承認(使用)R5JHs727)</a>',
+            attribution: '<a href="https://www.geospatial.jp/ckan/dataset/qchizu_94dem_99gsi" target="_blank">Q地図タイル(測量法に基づく国土地理院長承認(使用)R7JHs10)</a>',
             maxzoom: 17,
             tileSize: 256,
         },
