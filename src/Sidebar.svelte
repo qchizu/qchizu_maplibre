@@ -94,7 +94,7 @@
     <div class="settings-section">
         <h1 class="settings-title">標高データ</h1>
         <div class="settings-item margin">
-            <select bind:value={$selectedDemSource}>
+            <select bind:value={$selectedDemSource} class="select-fixed-width">
                 {#each demSourcesArray as source}
                 <option value={source.id}>{source.name}</option>
                 {/each}
@@ -122,7 +122,7 @@
                         
                         <div class="settings-item">
                             <label for="encoding">エンコーディング:</label>
-                            <select id="encoding" bind:value={$externalTileConfig.encoding}>
+                            <select id="encoding" bind:value={$externalTileConfig.encoding} class="select-fixed-width">
                                 {#each encodingOptions as option}
                                     <option value={option.value}>{option.label}</option>
                                 {/each}
@@ -453,5 +453,9 @@
         .mobile-only {
         display: block; /* mobile版でのみ表示 */
         }
+    }
+
+    .select-fixed-width {
+        width: 130px;
     }
 </style>
